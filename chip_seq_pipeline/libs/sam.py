@@ -112,9 +112,9 @@ class SamEntry(object):
         # Extra fields
         self.distance = split_sam_line[11]
         self.mismatches = split_sam_line[12]
-        self.number_of_hits = split_sam_line[14]
+        self.number_of_hits = split_sam_line[-1]
         try:
-            self.xa = split_sam_line[14] # Query / Mate
+            self.xa = split_sam_line[-1] # Query / Mate
         except IndexError:
             pass
 
