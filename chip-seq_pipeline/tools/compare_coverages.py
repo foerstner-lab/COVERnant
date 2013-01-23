@@ -55,6 +55,7 @@ class CoverageComparer(object):
         self._factor = factor
 
     def compare(self):
+        self._print_file_names()
         no_of_mapped_reads_chip = self._count_no_of_mapped_reads(
             self._bam_file_chip)
         no_of_mapped_reads_control = self._count_no_of_mapped_reads(
@@ -89,6 +90,12 @@ class CoverageComparer(object):
                 self.elements_and_coverage_ratios[element] = [
                     ratio * self._factor
                     for ratio in self.elements_and_coverage_ratios[element]]
+
+    def _print_file_names(self):
+        print("Performing ChIP-Seq analysis")
+        print("- Input file with ChIP-Seq data: %s" % self._bam_file_chip)
+        print("- Input file with reference data: %s" % self._bam_file_control)
+        print("- Output file: %s" % self._output_file)
 
     def _sliding_windows_average(self, coverages):
         averaged_coverages = [0] * len(coverages)
