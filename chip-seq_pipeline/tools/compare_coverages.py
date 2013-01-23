@@ -54,18 +54,19 @@ class CoverageComparer(object):
         self._step_size = step_size
         self._factor = factor
 
+    def _calc_coverage(self, bam_file):
+        coverage_creator = CoverageCreator()
+        coverage_creator.init_coverage_lists(bam_file)
+        coverage_creator.count_coverage(bam_file)
+
     def compare(self):
         self._print_file_names()
         no_of_mapped_reads_chip = self._count_no_of_mapped_reads(
             self._bam_file_chip)
         no_of_mapped_reads_control = self._count_no_of_mapped_reads(
             self._bam_file_control)
-        coverage_control = CoverageCreator()
-        coverage_control.init_coverage_lists(self._bam_file_control)
-        coverage_control.count_coverage(self._bam_file_control)
-        coverage_chip = CoverageCreator()
-        coverage_chip.init_coverage_lists(self._bam_file_chip)
-        coverage_chip.count_coverage(self._bam_file_chip)
+        coverage_control = self._calc_coverage(self._bam_file_control)
+        coverage_chip = self._calc_coverage(self._bam_file_chip)
         self.elements_and_coverage_ratios = {}
         for element in coverage_control.elements_and_coverages.keys():
             cur_cov_control = coverage_control.elements_and_coverages[
