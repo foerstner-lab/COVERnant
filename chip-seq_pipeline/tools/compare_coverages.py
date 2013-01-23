@@ -58,39 +58,43 @@ class CoverageComparer(object):
         coverage_creator = CoverageCreator()
         coverage_creator.init_coverage_lists(bam_file)
         coverage_creator.count_coverage(bam_file)
+        return(coverage_creator.elements_and_coverages)
 
     def compare(self):
         self._print_file_names()
-        no_of_mapped_reads_chip = self._count_no_of_mapped_reads(
+        self.no_of_mapped_reads_chip = self._count_no_of_mapped_reads(
             self._bam_file_chip)
-        no_of_mapped_reads_control = self._count_no_of_mapped_reads(
+        self.no_of_mapped_reads_control = self._count_no_of_mapped_reads(
             self._bam_file_control)
         coverage_control = self._calc_coverage(self._bam_file_control)
         coverage_chip = self._calc_coverage(self._bam_file_chip)
         self.elements_and_coverage_ratios = {}
-        for element in coverage_control.elements_and_coverages.keys():
-            cur_cov_control = coverage_control.elements_and_coverages[
-                element]
-            cur_cov_chip = coverage_chip.elements_and_coverages[element]
-            if len(cur_cov_control) != len(cur_cov_chip):
-                sys.stderr.write("Error! Different number of nucleotides.\n")
-                sys.exit(2)
-            if self._window_size != None:
-                cur_cov_control = self._sliding_windows_average(
-                    cur_cov_control)
-                cur_cov_chip = self._sliding_windows_average(
-                    cur_cov_chip)
-            # Calculate the ratio of Chip data to control data
-            self.elements_and_coverage_ratios[element] = [
-                self._ratio(
-                    float(chip) / float(no_of_mapped_reads_chip),
-                    float(con) / float(no_of_mapped_reads_control))
-                    for chip, con in zip(cur_cov_chip, cur_cov_control)]
-            # Multiply the ratio by a factor if given
-            if self._factor != None:
-                self.elements_and_coverage_ratios[element] = [
-                    ratio * self._factor
-                    for ratio in self.elements_and_coverage_ratios[element]]
+        for element in coverage_control.keys():
+            self.elements_and_coverage_ratios[
+                element] = self._compare_coverages(
+                    element, coverage_control, coverage_chip)
+
+    def _compare_coverages(self, element, coverage_control, coverage_chip):
+        cur_cov_control = coverage_control[element]
+        cur_cov_chip = coverage_chip[element]
+        if len(cur_cov_control) != len(cur_cov_chip):
+            sys.stderr.write("Error! Different number of nucleotides.\n")
+            sys.exit(2)
+        if self._window_size != None:
+            cur_cov_control = self._sliding_windows_average(cur_cov_control)
+            cur_cov_chip = self._sliding_windows_average(cur_cov_chip)
+        factor = 1.0
+        # Use the factor if given
+        if self._factor != None:
+            factor = float(self._factor)
+        # Calculate the ratio of Chip data to control data
+        coverage_ratios = [
+            self._ratio(
+                float(chip) / float(self.no_of_mapped_reads_chip),
+                float(con) / float(self.no_of_mapped_reads_control))
+                * factor
+                for chip, con in zip(cur_cov_chip, cur_cov_control)]
+        return(coverage_ratios)
 
     def _print_file_names(self):
         print("Performing ChIP-Seq analysis")
