@@ -80,8 +80,10 @@ class CoverageComparer(object):
                     cur_cov_chip)
             # Calculate the ratio of Chip data to control data
             self.elements_and_coverage_ratios[element] = [
-                self._ratio(mult, div) for mult, div in zip(
-                    cur_cov_control, cur_cov_chip)]
+                self._ratio(
+                    float(chip) / float(no_of_mapped_reads_chip),
+                    float(con) / float(no_of_mapped_reads_control))
+                    for chip, con in zip(cur_cov_chip, cur_cov_control)]
             # Multiply the ratio by a factor if given
             if self._factor != None:
                 self.elements_and_coverage_ratios[element] = [
