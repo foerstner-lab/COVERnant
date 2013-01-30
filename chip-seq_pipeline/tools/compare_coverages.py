@@ -40,7 +40,7 @@ def main():
     coverage_comparer.calc_coverages()
     coverage_comparer.write_chip_and_control_wiggle_files()
     coverage_comparer.compare()
-    coverage_comparer.write_ratio_wiggle_files()
+    coverage_comparer.write_ratio_wiggle_file()
 
 class CoverageComparer(object):
 
@@ -65,31 +65,26 @@ class CoverageComparer(object):
         self.coverage_control = self._calc_coverage(self._bam_file_control)
         self.coverage_chip = self._calc_coverage(self._bam_file_chip)
 
-    def _calc_coverage(self, bam_file):
-        coverage_creator = CoverageCreator()
-        coverage_creator.init_coverage_lists(bam_file)
-        coverage_creator.count_coverage(bam_file)
-        return(coverage_creator.elements_and_coverages)
-
     def write_chip_and_control_wiggle_files(self):
         self._write_wiggle(
             self.coverage_control, "control", self.no_of_mapped_reads_control)
         self._write_wiggle(
             self.coverage_chip, "chip", self.no_of_mapped_reads_chip)
-        pass
-
-    def _write_wiggle(self, elements_and_coverages, name, total_no_of_mapped_reads):
+        
+    def write_ratio_wiggle_file(self):
+        self._write_wiggle(self.elements_and_coverage_ratios, "ratio", 1)
+        
+    def _write_wiggle(self, elements_and_coverages, name, coverage_divisor):
         output_fh = open("%s-%s.wig" % (self._output_prefix, name), "w")
         output_fh.write("track type=wiggle_0 name=\"ChipSeq%s\"\n" % (name))
         for element in sorted(elements_and_coverages.keys()):
             output_fh.write("variableStep chrom=%s span=1\n" % (element))
-            # Filter values of 0 and multiply other the remaining
-            # ones by the given factor. pos is increased by 1 as a
-            # translation from a 0-based sysem (Python list) to a
-            # 1 based system (wiggle) takes place.
+            # Filter values of 0. pos is increased by 1 as a
+            # translation from a 0-based sysem (Python list) to a 1
+            # based system (wiggle) takes place.
             output_fh.write(
                 "\n".join(
-                    ["%s %s" % (pos + 1, coverage)
+                    ["%s %s" % (pos + 1, float(coverage)/coverage_divisor)
                      for pos, coverage in
                      filter(lambda pos_and_cov: pos_and_cov[1] != 0.0,
                             enumerate(elements_and_coverages[element]))]) + "\n")
@@ -101,6 +96,12 @@ class CoverageComparer(object):
             self.elements_and_coverage_ratios[
                 element] = self._compare_coverages(element)
 
+    def _calc_coverage(self, bam_file):
+        coverage_creator = CoverageCreator()
+        coverage_creator.init_coverage_lists(bam_file)
+        coverage_creator.count_coverage(bam_file)
+        return(coverage_creator.elements_and_coverages)
+            
     def _compare_coverages(self, element):
         cur_cov_control = self.coverage_control[element]
         cur_cov_chip = self.coverage_chip[element]
@@ -152,24 +153,6 @@ class CoverageComparer(object):
             return(mult/div)
         except:
             return(0.0)
-
-    def write_ratio_wiggle_files(self):
-        output_fh = open("%s-ratio.wig" % (self._output_prefix), "w")
-        output_fh.write("track type=wiggle_0 name=\"%s\"\n" % (
-            "ChipSeq")) # TODO: give better name
-        for element in sorted(self.elements_and_coverage_ratios.keys()):
-            output_fh.write("variableStep chrom=%s span=1\n" % (element))
-            # Filter values of 0 and multiply other the remaining
-            # ones by the given factor. pos is increased by 1 as a
-            # translation from a 0-based sysem (Python list) to a
-            # 1 based system (wiggle) takes place.
-            output_fh.write(
-                "\n".join(
-                    ["%s %s" % (pos + 1, coverage)
-                     for pos, coverage in
-                     filter(lambda pos_and_cov: pos_and_cov[1] != 0.0,
-                            enumerate(self.elements_and_coverage_ratios[element]))]) + "\n")
-        output_fh.close()
 
 if __name__ == "__main__":
    main()
