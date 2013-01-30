@@ -17,7 +17,7 @@ def main():
     parser = argparse.ArgumentParser(description=__description__)
     parser.add_argument("bam_file_control")
     parser.add_argument("bam_file_chip")
-    parser.add_argument("--output", "-o", dest="output_file",
+    parser.add_argument("--output", "-o", dest="output_prefix",
                         default="chip_seq.wig", required=False)
     parser.add_argument("--window_size", type=int, default=None,
                         help="Window size for sliding window average calculation.")
@@ -35,18 +35,20 @@ def main():
     # 'minus' - the value becomes
     args = parser.parse_args()
     coverage_comparer = CoverageComparer(
-        args.bam_file_control, args.bam_file_chip, args.output_file,
+        args.bam_file_control, args.bam_file_chip, args.output_prefix,
         args.window_size, args.step_size, args.factor)
+    coverage_comparer.calc_coverages()
+    coverage_comparer.write_chip_and_control_wiggle_files()
     coverage_comparer.compare()
-    coverage_comparer.write_to_wiggle_files()
+    coverage_comparer.write_ratio_wiggle_files()
 
 class CoverageComparer(object):
 
-    def __init__(self, bam_file_control, bam_file_chip, output_file,
+    def __init__(self, bam_file_control, bam_file_chip, output_prefix,
                  window_size, step_size, factor):
         self._bam_file_control = bam_file_control
         self._bam_file_chip = bam_file_chip
-        self._output_file = output_file
+        self._output_prefix = output_prefix
         if window_size % 2 == 0:
             sys.stderr.write("Error. Window size must be an odd number!\n")
             sys.exit(2)
@@ -54,29 +56,54 @@ class CoverageComparer(object):
         self._step_size = step_size
         self._factor = factor
 
+    def calc_coverages(self):
+        self._print_file_names()
+        self.no_of_mapped_reads_chip = self._count_no_of_mapped_reads(
+            self._bam_file_chip)
+        self.no_of_mapped_reads_control = self._count_no_of_mapped_reads(
+            self._bam_file_control)
+        self.coverage_control = self._calc_coverage(self._bam_file_control)
+        self.coverage_chip = self._calc_coverage(self._bam_file_chip)
+
     def _calc_coverage(self, bam_file):
         coverage_creator = CoverageCreator()
         coverage_creator.init_coverage_lists(bam_file)
         coverage_creator.count_coverage(bam_file)
         return(coverage_creator.elements_and_coverages)
 
-    def compare(self):
-        self._print_file_names()
-        self.no_of_mapped_reads_chip = self._count_no_of_mapped_reads(
-            self._bam_file_chip)
-        self.no_of_mapped_reads_control = self._count_no_of_mapped_reads(
-            self._bam_file_control)
-        coverage_control = self._calc_coverage(self._bam_file_control)
-        coverage_chip = self._calc_coverage(self._bam_file_chip)
-        self.elements_and_coverage_ratios = {}
-        for element in coverage_control.keys():
-            self.elements_and_coverage_ratios[
-                element] = self._compare_coverages(
-                    element, coverage_control, coverage_chip)
+    def write_chip_and_control_wiggle_files(self):
+        self._write_wiggle(
+            self.coverage_control, "control", self.no_of_mapped_reads_control)
+        self._write_wiggle(
+            self.coverage_chip, "chip", self.no_of_mapped_reads_chip)
+        pass
 
-    def _compare_coverages(self, element, coverage_control, coverage_chip):
-        cur_cov_control = coverage_control[element]
-        cur_cov_chip = coverage_chip[element]
+    def _write_wiggle(self, elements_and_coverages, name, total_no_of_mapped_reads):
+        output_fh = open("%s-%s.wig" % (self._output_prefix, name), "w")
+        output_fh.write("track type=wiggle_0 name=\"ChipSeq%s\"\n" % (name))
+        for element in sorted(elements_and_coverages.keys()):
+            output_fh.write("variableStep chrom=%s span=1\n" % (element))
+            # Filter values of 0 and multiply other the remaining
+            # ones by the given factor. pos is increased by 1 as a
+            # translation from a 0-based sysem (Python list) to a
+            # 1 based system (wiggle) takes place.
+            output_fh.write(
+                "\n".join(
+                    ["%s %s" % (pos + 1, coverage)
+                     for pos, coverage in
+                     filter(lambda pos_and_cov: pos_and_cov[1] != 0.0,
+                            enumerate(elements_and_coverages[element]))]) + "\n")
+        output_fh.close()
+
+    def compare(self):
+        self.elements_and_coverage_ratios = {}
+        for element in self.coverage_control.keys():
+            self.elements_and_coverage_ratios[
+                element] = self._compare_coverages(element)
+
+    def _compare_coverages(self, element):
+        cur_cov_control = self.coverage_control[element]
+        cur_cov_chip = self.coverage_chip[element]
         if len(cur_cov_control) != len(cur_cov_chip):
             sys.stderr.write("Error! Different number of nucleotides.\n")
             sys.exit(2)
@@ -100,7 +127,7 @@ class CoverageComparer(object):
         print("Performing ChIP-Seq analysis")
         print("- Input file with ChIP-Seq data: %s" % self._bam_file_chip)
         print("- Input file with reference data: %s" % self._bam_file_control)
-        print("- Output file: %s" % self._output_file)
+        print("- Output file prefix : %s" % self._output_prefix)
 
     def _sliding_windows_average(self, coverages):
         averaged_coverages = [0] * len(coverages)
@@ -126,8 +153,8 @@ class CoverageComparer(object):
         except:
             return(0.0)
 
-    def write_to_wiggle_files(self):
-        output_fh = open("%s" % (self._output_file), "w")
+    def write_ratio_wiggle_files(self):
+        output_fh = open("%s-ratio.wig" % (self._output_prefix), "w")
         output_fh.write("track type=wiggle_0 name=\"%s\"\n" % (
             "ChipSeq")) # TODO: give better name
         for element in sorted(self.elements_and_coverage_ratios.keys()):
