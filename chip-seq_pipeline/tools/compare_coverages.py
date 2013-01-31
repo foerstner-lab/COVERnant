@@ -76,7 +76,7 @@ class CoverageComparer(object):
         
     def _write_wiggle(self, elements_and_coverages, name, coverage_divisor):
         output_fh = open("%s-%s.wig" % (self._output_prefix, name), "w")
-        output_fh.write("track type=wiggle_0 name=\"ChipSeq%s\"\n" % (name))
+        output_fh.write("track type=wiggle_0 name=\"ChipSeq %s\"\n" % (name))
         for element in sorted(elements_and_coverages.keys()):
             output_fh.write("variableStep chrom=%s span=1\n" % (element))
             # Filter values of 0. pos is increased by 1 as a
