@@ -111,6 +111,15 @@ class CoverageComparer(object):
 
     def compare(self):
         self.elements_and_coverage_ratios = {}
+        self._factor = 1.0
+        # Use the factor if given
+        if self._factor != None:
+            self._factor = float(self._factor)
+        # Multiply with lowest read number
+        self._factor = self._factor * float(min([
+                self.no_of_mapped_reads_chip, 
+                self.no_of_mapped_reads_control]))
+        print("Multiplication factor: %s" % (self._factor))
         for element in self.coverage_control.keys():
             self.elements_and_coverage_ratios[
                 element] = self._compare_coverages(element)
@@ -130,16 +139,12 @@ class CoverageComparer(object):
         if self._window_size != None:
             cur_cov_control = self._sliding_windows_average(cur_cov_control)
             cur_cov_chip = self._sliding_windows_average(cur_cov_chip)
-        factor = 1.0
-        # Use the factor if given
-        if self._factor != None:
-            factor = float(self._factor)
         # Calculate the ratio of Chip data to control data
         coverage_ratios = [
             self._ratio(
                 float(chip) / float(self.no_of_mapped_reads_chip),
                 float(con) / float(self.no_of_mapped_reads_control))
-                * factor
+                * self._factor
                 for chip, con in zip(cur_cov_chip, cur_cov_control)]
         return(coverage_ratios)
 
