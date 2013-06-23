@@ -42,6 +42,9 @@ def main():
     coverage_comparer.compare()
     coverage_comparer.write_ratio_wiggle_file()
 
+    # multi smallest or 1M
+    # print total number of mapped reads
+
 class CoverageComparer(object):
 
     def __init__(self, bam_file_control, bam_file_chip, output_prefix,
@@ -67,13 +70,15 @@ class CoverageComparer(object):
 
     def write_chip_and_control_wiggle_files(self):
         self._write_wiggle(
-            self.coverage_control, "control", self.no_of_mapped_reads_control)
+            self._sliding_windows_average(self.coverage_control), 
+            "control", self.no_of_mapped_reads_control)
         self._write_wiggle(
-            self.coverage_chip, "chip", self.no_of_mapped_reads_chip)
-        
+            self._sliding_windows_average(self.coverage_chip), 
+            "chip", self.no_of_mapped_reads_chip)
+
     def write_ratio_wiggle_file(self):
         self._write_wiggle(self.elements_and_coverage_ratios, "ratio", 1)
-        
+
     def _write_wiggle(self, elements_and_coverages, name, coverage_divisor):
         output_fh = open("%s-%s.wig" % (self._output_prefix, name), "w")
         output_fh.write("track type=wiggle_0 name=\"ChipSeq %s\"\n" % (name))
@@ -101,7 +106,7 @@ class CoverageComparer(object):
         coverage_creator.init_coverage_lists(bam_file)
         coverage_creator.count_coverage(bam_file)
         return(coverage_creator.elements_and_coverages)
-            
+
     def _compare_coverages(self, element):
         cur_cov_control = self.coverage_control[element]
         cur_cov_chip = self.coverage_chip[element]
