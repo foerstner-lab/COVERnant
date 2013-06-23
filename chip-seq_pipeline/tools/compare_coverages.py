@@ -38,6 +38,7 @@ def main():
         args.bam_file_control, args.bam_file_chip, args.output_prefix,
         args.window_size, args.step_size, args.factor)
     coverage_comparer.calc_coverages()
+    coverage_comparer.print_no_aligned_reads()
     coverage_comparer.write_chip_and_control_wiggle_files()
     coverage_comparer.compare()
     coverage_comparer.write_ratio_wiggle_file()
@@ -67,6 +68,12 @@ class CoverageComparer(object):
             self._bam_file_control)
         self.coverage_control = self._calc_coverage(self._bam_file_control)
         self.coverage_chip = self._calc_coverage(self._bam_file_chip)
+
+    def print_no_aligned_reads(self):
+        print("Number of mapped reads in reference sample: %s" % 
+              self.no_of_mapped_reads_control)
+        print("Number of mapped reads in ChIP-Seq sample: %s" % 
+              self.no_of_mapped_reads_chip)
 
     def write_chip_and_control_wiggle_files(self):
         self._write_wiggle(
