@@ -77,11 +77,18 @@ class CoverageComparer(object):
 
     def write_chip_and_control_wiggle_files(self):
         self._write_wiggle(
-            self._sliding_windows_average(self.coverage_control), 
+            self._calc_averaged_coverages(self.coverage_control), 
             "control", self.no_of_mapped_reads_control)
         self._write_wiggle(
-            self._sliding_windows_average(self.coverage_chip), 
+            self._calc_averaged_coverages(self.coverage_chip), 
             "chip", self.no_of_mapped_reads_chip)
+
+    def _calc_averaged_coverages(self, coverages):
+        averaged_coverages = {}
+        for element, element_coverages in coverages.items():
+            averaged_coverages[element] = self._sliding_windows_average(
+               element_coverages)
+        return(averaged_coverages)
 
     def write_ratio_wiggle_file(self):
         self._write_wiggle(self.elements_and_coverage_ratios, "ratio", 1)
