@@ -39,6 +39,7 @@ def main():
         args.window_size, args.step_size, args.factor)
     coverage_comparer.calc_coverages()
     coverage_comparer.print_no_aligned_reads()
+    coverage_comparer.calc_combined_factor()
     coverage_comparer.write_chip_and_control_wiggle_files()
     coverage_comparer.compare()
     coverage_comparer.write_ratio_wiggle_file()
@@ -59,6 +60,7 @@ class CoverageComparer(object):
         self._window_size = window_size
         self._step_size = step_size
         self._factor = factor
+        self._combine_factor = None
 
     def calc_coverages(self):
         self._print_file_names()
@@ -75,13 +77,28 @@ class CoverageComparer(object):
         print("Number of mapped reads in ChIP-Seq sample: %s" % 
               self.no_of_mapped_reads_chip)
 
+    def calc_combined_factor(self):
+        min_no_of_mapped_reads = float(min([
+                    self.no_of_mapped_reads_chip, 
+                    self.no_of_mapped_reads_control]))
+        if self._factor != None:
+            self._combine_factor = min_no_of_mapped_reads * self._factor
+            print("Multiplication factor: %s (%s * %s)" % (
+                    self._combine_factor, min_no_of_mapped_reads, self._factor))
+        else:
+            self._combine_factor = min_no_of_mapped_reads
+            print("Multiplication factor: %s (min. number of aligned reads)" % (
+                    self._combine_factor))
+
     def write_chip_and_control_wiggle_files(self):
         self._write_wiggle(
             self._calc_averaged_coverages(self.coverage_control), 
-            "control", self.no_of_mapped_reads_control)
+            "control",
+            self._combine_factor/float(self.no_of_mapped_reads_control))
         self._write_wiggle(
             self._calc_averaged_coverages(self.coverage_chip), 
-            "chip", self.no_of_mapped_reads_chip)
+            "chip",
+            self._combine_factor/float(self.no_of_mapped_reads_chip))
 
     def _calc_averaged_coverages(self, coverages):
         averaged_coverages = {}
@@ -91,19 +108,20 @@ class CoverageComparer(object):
         return(averaged_coverages)
 
     def write_ratio_wiggle_file(self):
-        self._write_wiggle(self.elements_and_coverage_ratios, "ratio", 1)
+        self._write_wiggle(
+            self.elements_and_coverage_ratios, "ratio", self._combine_factor)
 
-    def _write_wiggle(self, elements_and_coverages, name, coverage_divisor):
+    def _write_wiggle(self, elements_and_coverages, name, factor):
         output_fh = open("%s-%s.wig" % (self._output_prefix, name), "w")
         output_fh.write("track type=wiggle_0 name=\"ChipSeq %s\"\n" % (name))
         for element in sorted(elements_and_coverages.keys()):
             output_fh.write("variableStep chrom=%s span=1\n" % (element))
-            # Filter values of 0. pos is increased by 1 as a
-            # translation from a 0-based sysem (Python list) to a 1
-            # based system (wiggle) takes place.
+            # Remove position with as coverage of 0. pos is increased
+            # by 1 as a translation from a 0-based sysem (Python list)
+            # to a 1 based system (wiggle) takes place.
             output_fh.write(
                 "\n".join(
-                    ["%s %s" % (pos + 1, float(coverage)/coverage_divisor)
+                    ["%s %s" % (pos + 1, float(coverage) * factor)
                      for pos, coverage in
                      filter(lambda pos_and_cov: pos_and_cov[1] != 0.0,
                             enumerate(elements_and_coverages[element]))]) + "\n")
@@ -111,15 +129,6 @@ class CoverageComparer(object):
 
     def compare(self):
         self.elements_and_coverage_ratios = {}
-        self._factor = 1.0
-        # Use the factor if given
-        if self._factor != None:
-            self._factor = float(self._factor)
-        # Multiply with lowest read number
-        self._factor = self._factor * float(min([
-                self.no_of_mapped_reads_chip, 
-                self.no_of_mapped_reads_control]))
-        print("Multiplication factor: %s" % (self._factor))
         for element in self.coverage_control.keys():
             self.elements_and_coverage_ratios[
                 element] = self._compare_coverages(element)
@@ -144,7 +153,6 @@ class CoverageComparer(object):
             self._ratio(
                 float(chip) / float(self.no_of_mapped_reads_chip),
                 float(con) / float(self.no_of_mapped_reads_control))
-                * self._factor
                 for chip, con in zip(cur_cov_chip, cur_cov_control)]
         return(coverage_ratios)
 
