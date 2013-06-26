@@ -26,6 +26,10 @@ def main():
                         " Default is 1.")
     parser.add_argument("--factor", type=float, default=None,
                         help="A factor the final ratio is multiplied with.")
+    parser.add_argument("--keep_zero_coverage", default=False, action="store_true",
+                        help="Also write positions with that have coverage of 0. "
+                        "Default is to discard those.")
+
     # TODO
     # parser.add_argument("--pseudocount",
     #                    help="Use pseudocounts to initate the coverage vector.")
@@ -36,7 +40,7 @@ def main():
     args = parser.parse_args()
     coverage_comparer = CoverageComparer(
         args.bam_file_control, args.bam_file_chip, args.output_prefix,
-        args.window_size, args.step_size, args.factor)
+        args.window_size, args.step_size, args.factor, args.keep_zero_coverage)
     coverage_comparer.calc_coverages()
     coverage_comparer.print_no_aligned_reads()
     coverage_comparer.calc_combined_factor()
@@ -50,7 +54,7 @@ def main():
 class CoverageComparer(object):
 
     def __init__(self, bam_file_control, bam_file_chip, output_prefix,
-                 window_size, step_size, factor):
+                 window_size, step_size, factor, keep_zero_coverage):
         self._bam_file_control = bam_file_control
         self._bam_file_chip = bam_file_chip
         self._output_prefix = output_prefix
@@ -61,6 +65,7 @@ class CoverageComparer(object):
         self._step_size = step_size
         self._factor = factor
         self._combine_factor = None
+        self._keep_zero_coverage = keep_zero_coverage
 
     def calc_coverages(self):
         self._print_file_names()
@@ -123,9 +128,20 @@ class CoverageComparer(object):
                 "\n".join(
                     ["%s %s" % (pos + 1, float(coverage) * factor)
                      for pos, coverage in
-                     filter(lambda pos_and_cov: pos_and_cov[1] != 0.0,
-                            enumerate(elements_and_coverages[element]))]) + "\n")
+                     self._pos_and_coverages(elements_and_coverages[element])])
+                + "\n")
         output_fh.close()
+
+    def _pos_and_coverages(self, coverages):
+        if self._keep_zero_coverage is False:
+            for pos, coverage in filter(
+                lambda pos_and_cov: pos_and_cov[1] != 0.0,
+                enumerate(coverages)):
+                yield (pos, coverage)
+        else:
+            for pos, coverage in enumerate(coverages):
+                if pos % self._step_size == 2:
+                    yield (pos, coverage)
 
     def compare(self):
         self.elements_and_coverage_ratios = {}
