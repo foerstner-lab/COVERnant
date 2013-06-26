@@ -35,4 +35,3 @@ class CoverageCreator(object):
                     coverage + increment for coverage in
                     self.elements_and_coverages[entry.reference][
                         start:end]]
-            
