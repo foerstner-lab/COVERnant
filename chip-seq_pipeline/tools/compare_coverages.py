@@ -2,7 +2,7 @@
 
 __description__ = ""
 __author__ = "Konrad Foerstner <konrad@foerstner.org>"
-__copyright__ = "2012 by Konrad Foerstner <konrad@foerstner.org>"
+__copyright__ = "2013 by Konrad Foerstner <konrad@foerstner.org>"
 __license__ = "ISC license"
 __email__ = "konrad@foerstner.org"
 __version__ = ""
@@ -10,8 +10,8 @@ __version__ = ""
 import argparse
 import sys
 sys.path.append("..")
-from libs.coveragecreator import CoverageCreator
-from libs.sam import SamParser
+from libs.coveragecalculator import CoverageCalculator
+import pysam
 
 def main():
     parser = argparse.ArgumentParser(description=__description__)
@@ -73,8 +73,8 @@ class CoverageComparer(object):
             self._bam_file_chip)
         self.no_of_mapped_reads_control = self._count_no_of_mapped_reads(
             self._bam_file_control)
-        self.coverage_control = self._calc_coverage(self._bam_file_control)
-        self.coverage_chip = self._calc_coverage(self._bam_file_chip)
+        self.coverage_control = self._prepare_coverage(self._bam_file_control)
+        self.coverage_chip = self._prepare_coverage(self._bam_file_chip)
 
     def print_no_aligned_reads(self):
         print("Number of mapped reads in reference sample: %s" % 
@@ -109,8 +109,8 @@ class CoverageComparer(object):
         averaged_coverages = {}
         for element, element_coverages in coverages.items():
             averaged_coverages[element] = self._sliding_windows_average(
-               element_coverages)
-        return(averaged_coverages)
+                element_coverages)
+        return averaged_coverages
 
     def write_ratio_wiggle_file(self):
         self._write_wiggle(
@@ -145,15 +145,23 @@ class CoverageComparer(object):
 
     def compare(self):
         self.elements_and_coverage_ratios = {}
-        for element in self.coverage_control.keys():
+        for element, coverages in self.coverage_control.items():
             self.elements_and_coverage_ratios[
                 element] = self._compare_coverages(element)
 
-    def _calc_coverage(self, bam_file):
-        coverage_creator = CoverageCreator()
-        coverage_creator.init_coverage_lists(bam_file)
-        coverage_creator.count_coverage(bam_file)
-        return(coverage_creator.elements_and_coverages)
+    def _prepare_coverage(self, bam_file):
+        ref_seq_and_coverages = {}
+        coverage_calculator = CoverageCalculator(
+            read_count_splitting=False, uniqueley_aligned_only=False,
+            first_base_only=False)
+        for ref_seq, coverages in coverage_calculator.ref_seq_and_coverages(bam_file):
+            assert len(coverages["forward"]) == len(coverages["reverse"])
+            # Sum up the coverage of the forward and reverse strand
+            summed_coverage = [
+                abs(cov_for) + abs(cor_rev) for cov_for, cor_rev 
+                in zip(coverages["forward"], coverages["reverse"])]
+            ref_seq_and_coverages[ref_seq] = summed_coverage
+        return ref_seq_and_coverages
 
     def _compare_coverages(self, element):
         cur_cov_control = self.coverage_control[element]
@@ -191,9 +199,10 @@ class CoverageComparer(object):
 
     def _count_no_of_mapped_reads(self, bam_file):
         reads = {}
-        sam_parser = SamParser()
-        for entry in sam_parser.entries_bam(bam_file):
-            reads[entry.query_id] = 1
+
+        with pysam.Samfile(bam_file, "rb") as bam_fh:
+            for read in bam_fh.fetch():
+                reads[read.qname] = 1
         return(len(reads))
 
     def _ratio(self, mult, div):
