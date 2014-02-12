@@ -5,7 +5,7 @@ __author__ = "Konrad Foerstner <konrad@foerstner.org>"
 __copyright__ = "2013 by Konrad Foerstner <konrad@foerstner.org>"
 __license__ = "ISC license"
 __email__ = "konrad@foerstner.org"
-__version__ = ""
+__version__ = "0.1"
 
 import argparse
 import sys
@@ -46,7 +46,7 @@ def main():
     coverage_comparer.calc_combined_factor()
     coverage_comparer.write_chip_and_control_wiggle_files()
     coverage_comparer.compare()
-    coverage_comparer.write_ratio_wiggle_file()
+    coverage_comparer.write_ratio_wiggle_files()
 
     # multi smallest or 1M
     # print total number of mapped reads
@@ -65,35 +65,77 @@ class CoverageComparer(object):
         self._step_size = step_size
         self._factor = factor
         self._combine_factor = None
+        self._combine_factor_forward = None
+        self._combine_factor_reverse = None
         self._keep_zero_coverage = keep_zero_coverage
 
     def calc_coverages(self):
         self._print_file_names()
-        self.no_of_mapped_reads_chip = self._count_no_of_mapped_reads(
+        (self.no_of_mapped_reads_chip, 
+         self.no_of_mapped_reads_chip_forward, 
+         self.no_of_mapped_reads_chip_reverse) = self._count_no_of_mapped_reads(
             self._bam_file_chip)
-        self.no_of_mapped_reads_control = self._count_no_of_mapped_reads(
+        (self.no_of_mapped_reads_control, 
+         self.no_of_mapped_reads_control_forward,
+         self.no_of_mapped_reads_control_reverse) = self._count_no_of_mapped_reads(
             self._bam_file_control)
-        self.coverage_control = self._prepare_coverage(self._bam_file_control)
-        self.coverage_chip = self._prepare_coverage(self._bam_file_chip)
+        (self.coverage_control, 
+         self.coverage_control_forward, 
+         self.coverage_control_reverse) = self._prepare_coverage(
+             self._bam_file_control)
+        (self.coverage_chip,
+         self.coverage_chip_forward, 
+         self.coverage_chip_reverse) = self._prepare_coverage(
+             self._bam_file_chip)
 
     def print_no_aligned_reads(self):
-        print("Number of mapped reads in reference sample: %s" % 
-              self.no_of_mapped_reads_control)
-        print("Number of mapped reads in ChIP-Seq sample: %s" % 
+        print("Number of mapped reads in reference sample - "
+              "total: %s" % self.no_of_mapped_reads_control)
+        print("Number of mapped reads in reference sample - "
+              "forward strand: %s" % self.no_of_mapped_reads_control_forward)
+        print("Number of mapped reads in reference sample - "
+              "reverse strand: %s" % self.no_of_mapped_reads_control_reverse)
+        print("Number of mapped reads in ChIP-Seq sample total: %s" % 
               self.no_of_mapped_reads_chip)
+        print("Number of mapped reads in ChIP-Seq sample - "
+              "forward strand: %s" % self.no_of_mapped_reads_chip_forward)
+        print("Number of mapped reads in ChIP-Seq sample - "
+              "reverse strand: %s" % self.no_of_mapped_reads_chip_reverse)
 
     def calc_combined_factor(self):
         min_no_of_mapped_reads = float(min([
                     self.no_of_mapped_reads_chip, 
                     self.no_of_mapped_reads_control]))
+        min_no_of_mapped_reads_forward = float(min([
+                    self.no_of_mapped_reads_chip_forward, 
+                    self.no_of_mapped_reads_control_forward]))
+        min_no_of_mapped_reads_reverse = float(min([
+                    self.no_of_mapped_reads_chip_reverse, 
+                    self.no_of_mapped_reads_control_reverse]))
         if self._factor != None:
             self._combine_factor = min_no_of_mapped_reads * self._factor
-            print("Multiplication factor: %s (%s * %s)" % (
+            self._combine_factor_forward = (
+                min_no_of_mapped_reads_forward * self._factor)
+            self._combine_factor_reverse = (
+                min_no_of_mapped_reads_reverse * self._factor)
+            print("Multiplication factor - total: %s (%s * %s)" % (
                     self._combine_factor, min_no_of_mapped_reads, self._factor))
+            print("Multiplication factor - forward: %s (%s * %s)" % (
+                    self._combine_factor_forward, min_no_of_mapped_reads_forward, 
+                self._factor))
+            print("Multiplication factor - reverse: %s (%s * %s)" % (
+                    self._combine_factor_reverse, min_no_of_mapped_reads_reverse,
+                self._factor))
         else:
             self._combine_factor = min_no_of_mapped_reads
-            print("Multiplication factor: %s (min. number of aligned reads)" % (
-                    self._combine_factor))
+            self._combine_factor_forward = min_no_of_mapped_reads_forward
+            self._combine_factor_forward = min_no_of_mapped_reads_reverse
+            print("Multiplication factor - total: %s (min. number of "
+                  "aligned reads)" % (self._combine_factor))
+            print("Multiplication factor - forward: %s (min. number of "
+                  "aligned reads)" % (self._combine_factor_forward))
+            print("Multiplication factor - reverse: %s (min. number of "
+                  "aligned reads)" % (self._combine_factor_reverse))
 
     def write_chip_and_control_wiggle_files(self):
         self._write_wiggle(
@@ -104,6 +146,26 @@ class CoverageComparer(object):
             self._calc_averaged_coverages(self.coverage_chip), 
             "chip",
             self._combine_factor/float(self.no_of_mapped_reads_chip))
+        self._write_wiggle(
+            self._calc_averaged_coverages(self.coverage_control_forward),
+            "control_forward",
+            self._combine_factor_forward/float(
+                self.no_of_mapped_reads_control_forward))
+        self._write_wiggle(
+            self._calc_averaged_coverages(self.coverage_chip_forward), 
+            "chip_forward",
+            self._combine_factor_forward/float(
+                self.no_of_mapped_reads_chip_forward))
+        self._write_wiggle(
+            self._calc_averaged_coverages(self.coverage_control_reverse), 
+            "control_reverse",
+            self._combine_factor_reverse/float(
+                self.no_of_mapped_reads_control_reverse))
+        self._write_wiggle(
+            self._calc_averaged_coverages(self.coverage_chip_reverse), 
+            "chip_reverse",
+            self._combine_factor_reverse/float(
+                self.no_of_mapped_reads_chip_reverse))
 
     def _calc_averaged_coverages(self, coverages):
         averaged_coverages = {}
@@ -112,9 +174,15 @@ class CoverageComparer(object):
                 element_coverages)
         return averaged_coverages
 
-    def write_ratio_wiggle_file(self):
+    def write_ratio_wiggle_files(self):
         self._write_wiggle(
             self.elements_and_coverage_ratios, "ratio", self._combine_factor)
+        self._write_wiggle(
+            self.elements_and_coverage_ratios_forward, "ratio_forward", 
+            self._combine_factor_forward)
+        self._write_wiggle(
+            self.elements_and_coverage_ratios_reverse, "ratio_reverse", 
+            self._combine_factor_reverse)
 
     def _write_wiggle(self, elements_and_coverages, name, factor):
         output_fh = open("%s-%s.wig" % (self._output_prefix, name), "w")
@@ -147,38 +215,59 @@ class CoverageComparer(object):
         self.elements_and_coverage_ratios = {}
         for element, coverages in self.coverage_control.items():
             self.elements_and_coverage_ratios[
-                element] = self._compare_coverages(element)
+                element] = self._compare_coverages(
+                    element, self.coverage_control, self.coverage_chip)
+        self.elements_and_coverage_ratios_forward = {}
+        for element, coverages in self.coverage_control_forward.items():
+            self.elements_and_coverage_ratios_forward[
+                element] = self._compare_coverages(
+                    element, self.coverage_control_forward, 
+                    self.coverage_chip_forward)
+        self.elements_and_coverage_ratios_reverse = {}
+        for element, coverages in self.coverage_control_reverse.items():
+            self.elements_and_coverage_ratios_reverse[
+                element] = self._compare_coverages(
+                    element, self.coverage_control_reverse, 
+                    self.coverage_chip_reverse)
 
-    def _prepare_coverage(self, bam_file):
-        ref_seq_and_coverages = {}
-        coverage_calculator = CoverageCalculator(
-            read_count_splitting=False, uniqueley_aligned_only=False,
-            first_base_only=False)
-        for ref_seq, coverages in coverage_calculator.ref_seq_and_coverages(bam_file):
-            assert len(coverages["forward"]) == len(coverages["reverse"])
-            # Sum up the coverage of the forward and reverse strand
-            summed_coverage = [
-                abs(cov_for) + abs(cor_rev) for cov_for, cor_rev 
-                in zip(coverages["forward"], coverages["reverse"])]
-            ref_seq_and_coverages[ref_seq] = summed_coverage
-        return ref_seq_and_coverages
-
-    def _compare_coverages(self, element):
-        cur_cov_control = self.coverage_control[element]
-        cur_cov_chip = self.coverage_chip[element]
+    def _compare_coverages(self, element, coverage_control, coverage_chip):
+        cur_cov_control = coverage_control[element]
+        cur_cov_chip = coverage_chip[element]
         if len(cur_cov_control) != len(cur_cov_chip):
             sys.stderr.write("Error! Different number of nucleotides.\n")
             sys.exit(2)
         if self._window_size != None:
             cur_cov_control = self._sliding_windows_average(cur_cov_control)
             cur_cov_chip = self._sliding_windows_average(cur_cov_chip)
-        # Calculate the ratio of Chip data to control data
+        # Calculate the ratio of chip data to control data
         coverage_ratios = [
             self._ratio(
                 float(chip) / float(self.no_of_mapped_reads_chip),
                 float(con) / float(self.no_of_mapped_reads_control))
                 for chip, con in zip(cur_cov_chip, cur_cov_control)]
         return(coverage_ratios)
+
+    def _prepare_coverage(self, bam_file):
+        ref_seq_and_coverages_sum = {}
+        ref_seq_and_coverages_forward = {}
+        ref_seq_and_coverages_reverse = {}
+        coverage_calculator = CoverageCalculator(
+            read_count_splitting=False, uniqueley_aligned_only=False,
+            first_base_only=False)
+        for ref_seq, coverages in coverage_calculator.ref_seq_and_coverages(
+                bam_file):
+            assert len(coverages["forward"]) == len(coverages["reverse"])
+            # Sum up the coverage of the forward and reverse strand
+            summed_coverage = [
+                abs(cov_for) + abs(cor_rev) for cov_for, cor_rev 
+                in zip(coverages["forward"], coverages["reverse"])]
+            ref_seq_and_coverages_sum[ref_seq] = summed_coverage
+            ref_seq_and_coverages_forward[ref_seq] = [
+                abs(cor_forw) for cor_forw in coverages["forward"]]
+            ref_seq_and_coverages_reverse[ref_seq] = [
+                abs(cor_rev) for cor_rev in coverages["reverse"]]
+        return (ref_seq_and_coverages_sum, ref_seq_and_coverages_forward, 
+                ref_seq_and_coverages_reverse)
 
     def _print_file_names(self):
         print("Performing ChIP-Seq analysis")
@@ -198,12 +287,16 @@ class CoverageComparer(object):
         return(averaged_coverages)
 
     def _count_no_of_mapped_reads(self, bam_file):
-        reads = {}
-
+        reads_forward = set()
+        reads_reverse = set()
         with pysam.Samfile(bam_file, "rb") as bam_fh:
             for read in bam_fh.fetch():
-                reads[read.qname] = 1
-        return(len(reads))
+                if read.is_reverse is False:
+                    reads_forward.add(read.qname)
+                else:
+                    reads_reverse.add(read.qname)
+        return(len(reads_forward) + len(reads_reverse), len(reads_forward), 
+               len(reads_reverse))
 
     def _ratio(self, mult, div):
         try:
