@@ -2,7 +2,7 @@
 
 __description__ = ""
 __author__ = "Konrad Foerstner <konrad@foerstner.org>"
-__copyright__ = "2013 by Konrad Foerstner <konrad@foerstner.org>"
+__copyright__ = "2014 by Konrad Foerstner <konrad@foerstner.org>"
 __license__ = "ISC license"
 __email__ = "konrad@foerstner.org"
 __version__ = "0.1"
