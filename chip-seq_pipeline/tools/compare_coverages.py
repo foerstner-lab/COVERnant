@@ -18,7 +18,7 @@ def main():
     parser.add_argument("bam_file_control")
     parser.add_argument("bam_file_chip")
     parser.add_argument("--output", "-o", dest="output_prefix",
-                        default="chip_seq.wig", required=False)
+                        default="chip_seq", required=False)
     parser.add_argument("--window_size", type=int, default=None,
                         help="Window size for sliding window average calculation.")
     parser.add_argument("--step_size", type=int, default=1,
@@ -103,69 +103,44 @@ class CoverageComparer(object):
               "reverse strand: %s" % self.no_of_mapped_reads_chip_reverse)
 
     def calc_combined_factor(self):
-        min_no_of_mapped_reads = float(min([
-                    self.no_of_mapped_reads_chip, 
-                    self.no_of_mapped_reads_control]))
-        min_no_of_mapped_reads_forward = float(min([
-                    self.no_of_mapped_reads_chip_forward, 
-                    self.no_of_mapped_reads_control_forward]))
-        min_no_of_mapped_reads_reverse = float(min([
-                    self.no_of_mapped_reads_chip_reverse, 
-                    self.no_of_mapped_reads_control_reverse]))
+        self._chip_rpm_factor = 1000000.0/float(self.no_of_mapped_reads_chip)
+        self._control_rpm_factor = 1000000.0/float(
+            self.no_of_mapped_reads_control)
+        self._ratio_factor = float(self.no_of_mapped_reads_chip)/float(
+            self.no_of_mapped_reads_control)
         if self._factor != None:
-            self._combine_factor = min_no_of_mapped_reads * self._factor
-            self._combine_factor_forward = (
-                min_no_of_mapped_reads_forward * self._factor)
-            self._combine_factor_reverse = (
-                min_no_of_mapped_reads_reverse * self._factor)
-            print("Multiplication factor - total: %s (%s * %s)" % (
-                    self._combine_factor, min_no_of_mapped_reads, self._factor))
-            print("Multiplication factor - forward: %s (%s * %s)" % (
-                    self._combine_factor_forward, min_no_of_mapped_reads_forward, 
-                self._factor))
-            print("Multiplication factor - reverse: %s (%s * %s)" % (
-                    self._combine_factor_reverse, min_no_of_mapped_reads_reverse,
-                self._factor))
+            self._ratio_factor *= self._factor
+            print("Ratio factor: %s (%s/%s * %s) " % (
+                self._ratio_factor, self.no_of_mapped_reads_chip, 
+                self.no_of_mapped_reads_control, self._factor))
         else:
-            self._combine_factor = min_no_of_mapped_reads
-            self._combine_factor_forward = min_no_of_mapped_reads_forward
-            self._combine_factor_forward = min_no_of_mapped_reads_reverse
-            print("Multiplication factor - total: %s (min. number of "
-                  "aligned reads)" % (self._combine_factor))
-            print("Multiplication factor - forward: %s (min. number of "
-                  "aligned reads)" % (self._combine_factor_forward))
-            print("Multiplication factor - reverse: %s (min. number of "
-                  "aligned reads)" % (self._combine_factor_reverse))
+            print("Ratio factor: %s (%s/%s) " % (
+                self._ratio_factor, self.no_of_mapped_reads_chip, 
+                self.no_of_mapped_reads_control,))
+        print("RPM factor chip: %s (1M/%s)" % (
+            self._chip_rpm_factor, self.no_of_mapped_reads_chip))
+        print("RPM factor control: %s (1M/%s)" % (
+            self._control_rpm_factor, self.no_of_mapped_reads_control))
 
     def write_chip_and_control_wiggle_files(self):
         self._write_wiggle(
             self._calc_averaged_coverages(self.coverage_control), 
-            "control",
-            self._combine_factor/float(self.no_of_mapped_reads_control))
-        self._write_wiggle(
-            self._calc_averaged_coverages(self.coverage_chip), 
-            "chip",
-            self._combine_factor/float(self.no_of_mapped_reads_chip))
+            "control", self._control_rpm_factor)
         self._write_wiggle(
             self._calc_averaged_coverages(self.coverage_control_forward),
-            "control_forward",
-            self._combine_factor_forward/float(
-                self.no_of_mapped_reads_control_forward))
+            "control_forward", self._control_rpm_factor)
         self._write_wiggle(
             self._calc_averaged_coverages(self.coverage_chip_forward), 
-            "chip_forward",
-            self._combine_factor_forward/float(
-                self.no_of_mapped_reads_chip_forward))
+            "chip_forward", self._chip_rpm_factor)
+        self._write_wiggle(
+            self._calc_averaged_coverages(self.coverage_chip), 
+            "chip",  self._chip_rpm_factor)
         self._write_wiggle(
             self._calc_averaged_coverages(self.coverage_control_reverse), 
-            "control_reverse",
-            self._combine_factor_reverse/float(
-                self.no_of_mapped_reads_control_reverse))
+            "control_reverse",  self._control_rpm_factor)
         self._write_wiggle(
             self._calc_averaged_coverages(self.coverage_chip_reverse), 
-            "chip_reverse",
-            self._combine_factor_reverse/float(
-                self.no_of_mapped_reads_chip_reverse))
+            "chip_reverse",  self._chip_rpm_factor)
 
     def _calc_averaged_coverages(self, coverages):
         averaged_coverages = {}
@@ -176,17 +151,18 @@ class CoverageComparer(object):
 
     def write_ratio_wiggle_files(self):
         self._write_wiggle(
-            self.elements_and_coverage_ratios, "ratio", self._combine_factor)
+            self.elements_and_coverage_ratios, "ratio", self._ratio_factor)
         self._write_wiggle(
             self.elements_and_coverage_ratios_forward, "ratio_forward", 
-            self._combine_factor_forward)
+            self._ratio_factor)
         self._write_wiggle(
             self.elements_and_coverage_ratios_reverse, "ratio_reverse", 
-            self._combine_factor_reverse)
+            self._ratio_factor)
 
     def _write_wiggle(self, elements_and_coverages, name, factor):
         output_fh = open("%s-%s.wig" % (self._output_prefix, name), "w")
-        output_fh.write("track type=wiggle_0 name=\"ChipSeq %s\"\n" % (name))
+        output_fh.write("track type=wiggle_0 name=\"ChipSeq_%s_%s\"\n" % (
+            name, self._output_prefix))
         for element in sorted(elements_and_coverages.keys()):
             output_fh.write("variableStep chrom=%s span=1\n" % (element))
             # Remove position with as coverage of 0. pos is increased
