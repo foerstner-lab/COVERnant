@@ -13,22 +13,26 @@ sys.path.append("..")
 from libs.coveragecalculator import CoverageCalculator
 import pysam
 
+
 def main():
     parser = argparse.ArgumentParser(description=__description__)
     parser.add_argument("bam_file_control")
     parser.add_argument("bam_file_chip")
     parser.add_argument("--output", "-o", dest="output_prefix",
                         default="chip_seq", required=False)
-    parser.add_argument("--window_size", type=int, default=None,
-                        help="Window size for sliding window average calculation.")
-    parser.add_argument("--step_size", type=int, default=1,
-                        help="Step size for sliding window average calculation."
-                        " Default is 1.")
+    parser.add_argument(
+        "--window_size", type=int, default=None,
+        help="Window size for sliding window average calculation.")
+    parser.add_argument(
+        "--step_size", type=int, default=1,
+        help="Step size for sliding window average calculation."
+        " Default is 1.")
     parser.add_argument("--factor", type=float, default=None,
                         help="A factor the final ratio is multiplied with.")
-    parser.add_argument("--keep_zero_coverage", default=False, action="store_true",
-                        help="Also write positions with that have coverage of 0. "
-                        "Default is to discard those.")
+    parser.add_argument(
+        "--keep_zero_coverage", default=False, action="store_true",
+        help="Also write positions with that have coverage of 0. "
+        "Default is to discard those.")
 
     # TODO
     # parser.add_argument("--pseudocount",
@@ -47,9 +51,9 @@ def main():
     coverage_comparer.write_chip_and_control_wiggle_files()
     coverage_comparer.compare()
     coverage_comparer.write_ratio_wiggle_files()
-
     # multi smallest or 1M
     # print total number of mapped reads
+
 
 class CoverageComparer(object):
 
@@ -71,20 +75,20 @@ class CoverageComparer(object):
 
     def calc_coverages(self):
         self._print_file_names()
-        (self.no_of_mapped_reads_chip, 
-         self.no_of_mapped_reads_chip_forward, 
+        (self.no_of_mapped_reads_chip,
+         self.no_of_mapped_reads_chip_forward,
          self.no_of_mapped_reads_chip_reverse) = self._count_no_of_mapped_reads(
             self._bam_file_chip)
-        (self.no_of_mapped_reads_control, 
+        (self.no_of_mapped_reads_control,
          self.no_of_mapped_reads_control_forward,
          self.no_of_mapped_reads_control_reverse) = self._count_no_of_mapped_reads(
             self._bam_file_control)
-        (self.coverage_control, 
-         self.coverage_control_forward, 
+        (self.coverage_control,
+         self.coverage_control_forward,
          self.coverage_control_reverse) = self._prepare_coverage(
              self._bam_file_control)
         (self.coverage_chip,
-         self.coverage_chip_forward, 
+         self.coverage_chip_forward,
          self.coverage_chip_reverse) = self._prepare_coverage(
              self._bam_file_chip)
 
@@ -95,7 +99,7 @@ class CoverageComparer(object):
               "forward strand: %s" % self.no_of_mapped_reads_control_forward)
         print("Number of mapped reads in reference sample - "
               "reverse strand: %s" % self.no_of_mapped_reads_control_reverse)
-        print("Number of mapped reads in ChIP-Seq sample total: %s" % 
+        print("Number of mapped reads in ChIP-Seq sample total: %s" %
               self.no_of_mapped_reads_chip)
         print("Number of mapped reads in ChIP-Seq sample - "
               "forward strand: %s" % self.no_of_mapped_reads_chip_forward)
@@ -108,14 +112,14 @@ class CoverageComparer(object):
             self.no_of_mapped_reads_control)
         self._ratio_factor = float(self.no_of_mapped_reads_chip)/float(
             self.no_of_mapped_reads_control)
-        if self._factor != None:
+        if self._factor is not None:
             self._ratio_factor *= self._factor
             print("Ratio factor: %s (%s/%s * %s) " % (
-                self._ratio_factor, self.no_of_mapped_reads_chip, 
+                self._ratio_factor, self.no_of_mapped_reads_chip,
                 self.no_of_mapped_reads_control, self._factor))
         else:
             print("Ratio factor: %s (%s/%s) " % (
-                self._ratio_factor, self.no_of_mapped_reads_chip, 
+                self._ratio_factor, self.no_of_mapped_reads_chip,
                 self.no_of_mapped_reads_control,))
         print("RPM factor chip: %s (1M/%s)" % (
             self._chip_rpm_factor, self.no_of_mapped_reads_chip))
@@ -124,22 +128,22 @@ class CoverageComparer(object):
 
     def write_chip_and_control_wiggle_files(self):
         self._write_wiggle(
-            self._calc_averaged_coverages(self.coverage_control), 
+            self._calc_averaged_coverages(self.coverage_control),
             "control", self._control_rpm_factor)
         self._write_wiggle(
             self._calc_averaged_coverages(self.coverage_control_forward),
             "control_forward", self._control_rpm_factor)
         self._write_wiggle(
-            self._calc_averaged_coverages(self.coverage_chip_forward), 
+            self._calc_averaged_coverages(self.coverage_chip_forward),
             "chip_forward", self._chip_rpm_factor)
         self._write_wiggle(
-            self._calc_averaged_coverages(self.coverage_chip), 
+            self._calc_averaged_coverages(self.coverage_chip),
             "chip",  self._chip_rpm_factor)
         self._write_wiggle(
-            self._calc_averaged_coverages(self.coverage_control_reverse), 
+            self._calc_averaged_coverages(self.coverage_control_reverse),
             "control_reverse",  self._control_rpm_factor)
         self._write_wiggle(
-            self._calc_averaged_coverages(self.coverage_chip_reverse), 
+            self._calc_averaged_coverages(self.coverage_chip_reverse),
             "chip_reverse",  self._chip_rpm_factor)
 
     def _calc_averaged_coverages(self, coverages):
@@ -153,10 +157,10 @@ class CoverageComparer(object):
         self._write_wiggle(
             self.elements_and_coverage_ratios, "ratio", self._ratio_factor)
         self._write_wiggle(
-            self.elements_and_coverage_ratios_forward, "ratio_forward", 
+            self.elements_and_coverage_ratios_forward, "ratio_forward",
             self._ratio_factor)
         self._write_wiggle(
-            self.elements_and_coverage_ratios_reverse, "ratio_reverse", 
+            self.elements_and_coverage_ratios_reverse, "ratio_reverse",
             self._ratio_factor)
 
     def _write_wiggle(self, elements_and_coverages, name, factor):
@@ -180,7 +184,7 @@ class CoverageComparer(object):
         if self._keep_zero_coverage is False:
             for pos, coverage in filter(
                 lambda pos_and_cov: pos_and_cov[1] != 0.0,
-                enumerate(coverages)):
+                    enumerate(coverages)):
                 yield (pos, coverage)
         else:
             for pos, coverage in enumerate(coverages):
@@ -197,13 +201,13 @@ class CoverageComparer(object):
         for element, coverages in self.coverage_control_forward.items():
             self.elements_and_coverage_ratios_forward[
                 element] = self._compare_coverages(
-                    element, self.coverage_control_forward, 
+                    element, self.coverage_control_forward,
                     self.coverage_chip_forward)
         self.elements_and_coverage_ratios_reverse = {}
         for element, coverages in self.coverage_control_reverse.items():
             self.elements_and_coverage_ratios_reverse[
                 element] = self._compare_coverages(
-                    element, self.coverage_control_reverse, 
+                    element, self.coverage_control_reverse,
                     self.coverage_chip_reverse)
 
     def _compare_coverages(self, element, coverage_control, coverage_chip):
@@ -212,7 +216,7 @@ class CoverageComparer(object):
         if len(cur_cov_control) != len(cur_cov_chip):
             sys.stderr.write("Error! Different number of nucleotides.\n")
             sys.exit(2)
-        if self._window_size != None:
+        if self._window_size is not None:
             cur_cov_control = self._sliding_windows_average(cur_cov_control)
             cur_cov_chip = self._sliding_windows_average(cur_cov_chip)
         # Calculate the ratio of chip data to control data
@@ -220,7 +224,7 @@ class CoverageComparer(object):
             self._ratio(
                 float(chip) / float(self.no_of_mapped_reads_chip),
                 float(con) / float(self.no_of_mapped_reads_control))
-                for chip, con in zip(cur_cov_chip, cur_cov_control)]
+            for chip, con in zip(cur_cov_chip, cur_cov_control)]
         return(coverage_ratios)
 
     def _prepare_coverage(self, bam_file):
