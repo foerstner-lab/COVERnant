@@ -1,5 +1,6 @@
 import pysam
 
+
 class CoverageCalculator(object):
 
     def __init__(self, read_count_splitting=True, uniqueley_aligned_only=False,
@@ -9,6 +10,8 @@ class CoverageCalculator(object):
         self._first_base_only = first_base_only
         self._coverage_add_function = self._select_coverage_add_function()
         self._coverages = {}
+        self.used_alignmets = 0
+        self.discared_alignments = 0
 
     def ref_seq_and_coverages(self, bam_path):
         bam = self._open_bam_file(bam_path)
@@ -39,6 +42,10 @@ class CoverageCalculator(object):
                 increment = 1.0 / float(number_of_hits)
             else:
                 increment = 1.0
+            if end is None or start is None:
+                self.discared_alignments += 1
+                continue
+            self.used_alignmets += 1
             self._coverage_add_function(entry, increment, start, end)
 
     def _select_coverage_add_function(self):
@@ -48,7 +55,7 @@ class CoverageCalculator(object):
             return self._add_first_base_coverage
 
     def _open_bam_file(self, bam_file):
-        return pysam.Samfile(bam_file)
+        return pysam.AlignmentFile(bam_file)
 
     def _close_bam_fh(self, bam_fh):
         bam_fh.close()
