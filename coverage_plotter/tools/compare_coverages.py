@@ -16,10 +16,10 @@ import pysam
 
 def main():
     parser = argparse.ArgumentParser(description=__description__)
-    parser.add_argument("bam_file_control")
-    parser.add_argument("bam_file_chip")
+    parser.add_argument("bam_file_denominator")
+    parser.add_argument("bam_file_numerator")
     parser.add_argument("--output", "-o", dest="output_prefix",
-                        default="chip_seq", required=False)
+                        default="numerator_seq", required=False)
     parser.add_argument(
         "--window_size", type=int, default=None,
         help="Window size for sliding window average calculation.")
@@ -43,21 +43,21 @@ def main():
     # 'minus' - the value becomes
     args = parser.parse_args()
     coverage_comparer = CoverageComparer(
-        args.bam_file_control, args.bam_file_chip, args.output_prefix,
+        args.bam_file_denominator, args.bam_file_numerator, args.output_prefix,
         args.window_size, args.step_size, args.factor, args.keep_zero_coverage)
     coverage_comparer.calc_coverages()
     coverage_comparer.print_no_aligned_reads()
     coverage_comparer.calc_combined_factor()
-    coverage_comparer.write_chip_and_control_wiggle_files()
+    coverage_comparer.write_numerator_and_denominator_wiggle_files()
     coverage_comparer.compare()
     coverage_comparer.write_ratio_wiggle_files()
 
 class CoverageComparer(object):
 
-    def __init__(self, bam_file_control, bam_file_chip, output_prefix,
+    def __init__(self, bam_file_denominator, bam_file_numerator, output_prefix,
                  window_size, step_size, factor, keep_zero_coverage):
-        self._bam_file_control = bam_file_control
-        self._bam_file_chip = bam_file_chip
+        self._bam_file_denominator = bam_file_denominator
+        self._bam_file_numerator = bam_file_numerator
         self._output_prefix = output_prefix
         if window_size % 2 == 0:
             sys.stderr.write("Error. Window size must be an odd number!\n")
@@ -72,76 +72,78 @@ class CoverageComparer(object):
 
     def calc_coverages(self):
         self._print_file_names()
-        (self.no_of_mapped_reads_chip,
-         self.no_of_mapped_reads_chip_forward,
-         self.no_of_mapped_reads_chip_reverse
-        ) = self._count_no_of_mapped_reads(self._bam_file_chip)
-        (self.no_of_mapped_reads_control,
-         self.no_of_mapped_reads_control_forward,
-         self.no_of_mapped_reads_control_reverse
-        ) = self._count_no_of_mapped_reads(self._bam_file_control)
-        (self.coverage_control,
-         self.coverage_control_forward,
-         self.coverage_control_reverse) = self._prepare_coverage(
-             self._bam_file_control)
-        (self.coverage_chip,
-         self.coverage_chip_forward,
-         self.coverage_chip_reverse) = self._prepare_coverage(
-             self._bam_file_chip)
+        (self.no_of_mapped_reads_numerator,
+         self.no_of_mapped_reads_numerator_forward,
+         self.no_of_mapped_reads_numerator_reverse
+        ) = self._count_no_of_mapped_reads(
+            self._bam_file_numerator)
+        (self.no_of_mapped_reads_denominator,
+         self.no_of_mapped_reads_denominator_forward,
+         self.no_of_mapped_reads_denominator_reverse
+        ) = self._count_no_of_mapped_reads(
+            self._bam_file_denominator)
+        (self.coverage_denominator,
+         self.coverage_denominator_forward,
+         self.coverage_denominator_reverse) = self._prepare_coverage(
+             self._bam_file_denominator)
+        (self.coverage_numerator,
+         self.coverage_numerator_forward,
+         self.coverage_numerator_reverse) = self._prepare_coverage(
+             self._bam_file_numerator)
 
     def print_no_aligned_reads(self):
-        print("Number of mapped reads in reference sample - "
-              "total: %s" % self.no_of_mapped_reads_control)
-        print("Number of mapped reads in reference sample - "
-              "forward strand: %s" % self.no_of_mapped_reads_control_forward)
-        print("Number of mapped reads in reference sample - "
-              "reverse strand: %s" % self.no_of_mapped_reads_control_reverse)
-        print("Number of mapped reads in ChIP-Seq sample total: %s" %
-              self.no_of_mapped_reads_chip)
-        print("Number of mapped reads in ChIP-Seq sample - "
-              "forward strand: %s" % self.no_of_mapped_reads_chip_forward)
-        print("Number of mapped reads in ChIP-Seq sample - "
-              "reverse strand: %s" % self.no_of_mapped_reads_chip_reverse)
+        print("Number of mapped reads in denominator sample - "
+              "total: %s" % self.no_of_mapped_reads_denominator)
+        print("Number of mapped reads in denominator sample - "
+              "forward strand: %s" % self.no_of_mapped_reads_denominator_forward)
+        print("Number of mapped reads in denominator sample - "
+              "reverse strand: %s" % self.no_of_mapped_reads_denominator_reverse)
+        print("Number of mapped reads in numerator sample total: %s" %
+              self.no_of_mapped_reads_numerator)
+        print("Number of mapped reads in numerator sample - "
+              "forward strand: %s" % self.no_of_mapped_reads_numerator_forward)
+        print("Number of mapped reads in numerator sample - "
+              "reverse strand: %s" % self.no_of_mapped_reads_numerator_reverse)
 
     def calc_combined_factor(self):
-        self._chip_rpm_factor = 1000000.0/float(self.no_of_mapped_reads_chip)
-        self._control_rpm_factor = 1000000.0/float(
-            self.no_of_mapped_reads_control)
-        self._ratio_factor = float(self.no_of_mapped_reads_chip)/float(
-            self.no_of_mapped_reads_control)
+        self._numerator_rpm_factor = 1000000.0/float(self.no_of_mapped_reads_numerator)
+        self._denominator_rpm_factor = 1000000.0/float(
+            self.no_of_mapped_reads_denominator)
+        self._ratio_factor = float(self.no_of_mapped_reads_numerator)/float(
+            self.no_of_mapped_reads_denominator)
         if self._factor is not None:
             self._ratio_factor *= self._factor
             print("Ratio factor: %s (%s/%s * %s) " % (
-                self._ratio_factor, self.no_of_mapped_reads_chip,
-                self.no_of_mapped_reads_control, self._factor))
+                self._ratio_factor, self.no_of_mapped_reads_numerator,
+                self.no_of_mapped_reads_denominator, self._factor))
         else:
             print("Ratio factor: %s (%s/%s) " % (
-                self._ratio_factor, self.no_of_mapped_reads_chip,
-                self.no_of_mapped_reads_control,))
-        print("RPM factor chip: %s (1M/%s)" % (
-            self._chip_rpm_factor, self.no_of_mapped_reads_chip))
-        print("RPM factor control: %s (1M/%s)" % (
-            self._control_rpm_factor, self.no_of_mapped_reads_control))
+                self._ratio_factor, self.no_of_mapped_reads_numerator,
+                self.no_of_mapped_reads_denominator,))
+        print("RPM factor numerator: %s (1M/%s)" % (
+            self._numerator_rpm_factor, self.no_of_mapped_reads_numerator))
+        print("RPM factor denominator: %s (1M/%s)" % (
+            self._denominator_rpm_factor, self.no_of_mapped_reads_denominator))
 
-    def write_chip_and_control_wiggle_files(self):
+    def write_numerator_and_denominator_wiggle_files(self):
         self._write_wiggle(
-            self._calc_averaged_coverages(self.coverage_control),
-            "control", self._control_rpm_factor)
+            self._calc_averaged_coverages(self.coverage_denominator),
+            "denominator", self._denominator_rpm_factor)
         self._write_wiggle(
-            self._calc_averaged_coverages(self.coverage_control_forward),
-            "control_forward", self._control_rpm_factor)
+            self._calc_averaged_coverages(self.coverage_denominator_forward),
+            "denominator_forward", self._denominator_rpm_factor)
         self._write_wiggle(
-            self._calc_averaged_coverages(self.coverage_chip_forward),
-            "chip_forward", self._chip_rpm_factor)
+            self._calc_averaged_coverages(self.coverage_numerator_forward),
+            "numerator_forward", self._numerator_rpm_factor)
         self._write_wiggle(
-            self._calc_averaged_coverages(self.coverage_chip),
-            "chip",  self._chip_rpm_factor)
+            self._calc_averaged_coverages(self.coverage_numerator),
+            "numerator", self._numerator_rpm_factor)
         self._write_wiggle(
-            self._calc_averaged_coverages(self.coverage_control_reverse),
-            "control_reverse",  self._control_rpm_factor)
+            self._calc_averaged_coverages(self.coverage_denominator_reverse),
+            "denominator_reverse", self._denominator_rpm_factor)
         self._write_wiggle(
-            self._calc_averaged_coverages(self.coverage_chip_reverse),
-            "chip_reverse",  self._chip_rpm_factor)
+            self._calc_averaged_coverages(self.coverage_numerator_reverse),
+            "numerator_reverse", self._numerator_rpm_factor)
 
     def _calc_averaged_coverages(self, coverages):
         averaged_coverages = {}
@@ -162,7 +164,7 @@ class CoverageComparer(object):
 
     def _write_wiggle(self, elements_and_coverages, name, factor):
         output_fh = open("%s-%s.wig" % (self._output_prefix, name), "w")
-        output_fh.write("track type=wiggle_0 name=\"ChipSeq_%s_%s\"\n" % (
+        output_fh.write("track type=wiggle_0 name=\"%s_%s\"\n" % (
             name, self._output_prefix.split("/")[-1]))
         for element in sorted(elements_and_coverages.keys()):
             output_fh.write("variableStep chrom=%s span=1\n" % (element))
@@ -190,38 +192,42 @@ class CoverageComparer(object):
 
     def compare(self):
         self.elements_and_coverage_ratios = {}
-        for element, coverages in self.coverage_control.items():
+        for element, coverages in self.coverage_denominator.items():
             self.elements_and_coverage_ratios[
                 element] = self._compare_coverages(
-                    element, self.coverage_control, self.coverage_chip)
+                    element, self.coverage_denominator,
+                    self.coverage_numerator)
         self.elements_and_coverage_ratios_forward = {}
-        for element, coverages in self.coverage_control_forward.items():
+        for element, coverages in self.coverage_denominator_forward.items():
             self.elements_and_coverage_ratios_forward[
                 element] = self._compare_coverages(
-                    element, self.coverage_control_forward,
-                    self.coverage_chip_forward)
+                    element, self.coverage_denominator_forward,
+                    self.coverage_numerator_forward)
         self.elements_and_coverage_ratios_reverse = {}
-        for element, coverages in self.coverage_control_reverse.items():
+        for element, coverages in self.coverage_denominator_reverse.items():
             self.elements_and_coverage_ratios_reverse[
                 element] = self._compare_coverages(
-                    element, self.coverage_control_reverse,
-                    self.coverage_chip_reverse)
+                    element, self.coverage_denominator_reverse,
+                    self.coverage_numerator_reverse)
 
-    def _compare_coverages(self, element, coverage_control, coverage_chip):
-        cur_cov_control = coverage_control[element]
-        cur_cov_chip = coverage_chip[element]
-        if len(cur_cov_control) != len(cur_cov_chip):
+    def _compare_coverages(self, element, coverage_denominator,
+                           coverage_numerator):
+        cur_cov_denominator = coverage_denominator[element]
+        cur_cov_numerator = coverage_numerator[element]
+        if len(cur_cov_denominator) != len(cur_cov_numerator):
             sys.stderr.write("Error! Different number of nucleotides.\n")
             sys.exit(2)
         if self._window_size is not None:
-            cur_cov_control = self._sliding_windows_average(cur_cov_control)
-            cur_cov_chip = self._sliding_windows_average(cur_cov_chip)
-        # Calculate the ratio of chip data to control data
+            cur_cov_denominator = self._sliding_windows_average(
+                cur_cov_denominator)
+            cur_cov_numerator = self._sliding_windows_average(
+                cur_cov_numerator)
+        # Calculate the ratio of numerator data to denominator data
         coverage_ratios = [
             self._ratio(
-                float(chip) / float(self.no_of_mapped_reads_chip),
-                float(con) / float(self.no_of_mapped_reads_control))
-            for chip, con in zip(cur_cov_chip, cur_cov_control)]
+                float(numerator) / float(self.no_of_mapped_reads_numerator),
+                float(con) / float(self.no_of_mapped_reads_denominator))
+            for numerator, con in zip(cur_cov_numerator, cur_cov_denominator)]
         return(coverage_ratios)
 
     def _prepare_coverage(self, bam_file):
@@ -247,13 +253,15 @@ class CoverageComparer(object):
             coverage_calculator.used_alignmets))
         print("Number of discarded alignments: {}".format(
             coverage_calculator.discared_alignments))
-        return (ref_seq_and_coverages_sum, ref_seq_and_coverages_forward, 
+        return (ref_seq_and_coverages_sum, ref_seq_and_coverages_forward,
                 ref_seq_and_coverages_reverse)
 
     def _print_file_names(self):
         print("Performing ChIP-Seq analysis")
-        print("- Input file with ChIP-Seq data: %s" % self._bam_file_chip)
-        print("- Input file with reference data: %s" % self._bam_file_control)
+        print("- Input file with numerator data: %s" %
+              self._bam_file_numerator)
+        print("- Input file with denominator data: %s" %
+              self._bam_file_denominator)
         print("- Output file prefix : %s" % self._output_prefix)
 
     def _sliding_windows_average(self, coverages):
