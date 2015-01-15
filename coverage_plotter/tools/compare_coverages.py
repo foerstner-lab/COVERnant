@@ -2,10 +2,10 @@
 
 __description__ = ""
 __author__ = "Konrad Foerstner <konrad@foerstner.org>"
-__copyright__ = "2014 by Konrad Foerstner <konrad@foerstner.org>"
+__copyright__ = "2015 by Konrad Foerstner <konrad@foerstner.org>"
 __license__ = "ISC license"
 __email__ = "konrad@foerstner.org"
-__version__ = "0.1"
+__version__ = "0.2dev"
 
 import argparse
 import sys
