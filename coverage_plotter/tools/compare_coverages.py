@@ -51,9 +51,6 @@ def main():
     coverage_comparer.write_chip_and_control_wiggle_files()
     coverage_comparer.compare()
     coverage_comparer.write_ratio_wiggle_files()
-    # multi smallest or 1M
-    # print total number of mapped reads
-
 
 class CoverageComparer(object):
 
@@ -77,12 +74,12 @@ class CoverageComparer(object):
         self._print_file_names()
         (self.no_of_mapped_reads_chip,
          self.no_of_mapped_reads_chip_forward,
-         self.no_of_mapped_reads_chip_reverse) = self._count_no_of_mapped_reads(
-            self._bam_file_chip)
+         self.no_of_mapped_reads_chip_reverse
+        ) = self._count_no_of_mapped_reads(self._bam_file_chip)
         (self.no_of_mapped_reads_control,
          self.no_of_mapped_reads_control_forward,
-         self.no_of_mapped_reads_control_reverse) = self._count_no_of_mapped_reads(
-            self._bam_file_control)
+         self.no_of_mapped_reads_control_reverse
+        ) = self._count_no_of_mapped_reads(self._bam_file_control)
         (self.coverage_control,
          self.coverage_control_forward,
          self.coverage_control_reverse) = self._prepare_coverage(
@@ -166,7 +163,7 @@ class CoverageComparer(object):
     def _write_wiggle(self, elements_and_coverages, name, factor):
         output_fh = open("%s-%s.wig" % (self._output_prefix, name), "w")
         output_fh.write("track type=wiggle_0 name=\"ChipSeq_%s_%s\"\n" % (
-            name, self._output_prefix))
+            name, self._output_prefix.split("/")[-1]))
         for element in sorted(elements_and_coverages.keys()):
             output_fh.write("variableStep chrom=%s span=1\n" % (element))
             # Remove position with as coverage of 0. pos is increased
@@ -246,6 +243,10 @@ class CoverageComparer(object):
                 abs(cor_forw) for cor_forw in coverages["forward"]]
             ref_seq_and_coverages_reverse[ref_seq] = [
                 abs(cor_rev) for cor_rev in coverages["reverse"]]
+        print("Number of used alignments: {}".format(
+            coverage_calculator.used_alignmets))
+        print("Number of discarded alignments: {}".format(
+            coverage_calculator.discared_alignments))
         return (ref_seq_and_coverages_sum, ref_seq_and_coverages_forward, 
                 ref_seq_and_coverages_reverse)
 
