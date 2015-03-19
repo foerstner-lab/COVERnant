@@ -33,6 +33,9 @@ def main():
         "--keep_zero_coverage", default=False, action="store_true",
         help="Also write positions with that have coverage of 0. "
         "Default is to discard those.")
+    parser.add_argument("--denominator_name", default=None)
+    parser.add_argument("--numerator_name", default=None)
+    parser.add_argument("--ratio_name", default=None)
 
     # TODO
     # parser.add_argument("--pseudocount",
@@ -44,7 +47,9 @@ def main():
     args = parser.parse_args()
     coverage_comparer = CoverageComparer(
         args.bam_file_denominator, args.bam_file_numerator, args.output_prefix,
-        args.window_size, args.step_size, args.factor, args.keep_zero_coverage)
+        args.window_size, args.step_size, args.factor, args.keep_zero_coverage,
+        args.denominator_name, args.numerator_name, args.ratio_name)
+    coverage_comparer.set_names()
     coverage_comparer.calc_coverages()
     coverage_comparer.print_no_aligned_reads()
     coverage_comparer.calc_combined_factor()
@@ -55,7 +60,8 @@ def main():
 class CoverageComparer(object):
 
     def __init__(self, bam_file_denominator, bam_file_numerator, output_prefix,
-                 window_size, step_size, factor, keep_zero_coverage):
+                 window_size, step_size, factor, keep_zero_coverage,
+                 denominator_name, numerator_name, ratio_name):
         self._bam_file_denominator = bam_file_denominator
         self._bam_file_numerator = bam_file_numerator
         self._output_prefix = output_prefix
@@ -69,6 +75,9 @@ class CoverageComparer(object):
         self._combine_factor_forward = None
         self._combine_factor_reverse = None
         self._keep_zero_coverage = keep_zero_coverage
+        self._denominator_name = denominator_name
+        self._numerator_name = numerator_name
+        self._ratio_name = ratio_name
 
     def calc_coverages(self):
         self._print_file_names()
@@ -95,9 +104,11 @@ class CoverageComparer(object):
         print("Number of mapped reads in denominator sample - "
               "total: %s" % self.no_of_mapped_reads_denominator)
         print("Number of mapped reads in denominator sample - "
-              "forward strand: %s" % self.no_of_mapped_reads_denominator_forward)
+              "forward strand: %s" %
+              self.no_of_mapped_reads_denominator_forward)
         print("Number of mapped reads in denominator sample - "
-              "reverse strand: %s" % self.no_of_mapped_reads_denominator_reverse)
+              "reverse strand: %s" %
+              self.no_of_mapped_reads_denominator_reverse)
         print("Number of mapped reads in numerator sample total: %s" %
               self.no_of_mapped_reads_numerator)
         print("Number of mapped reads in numerator sample - "
@@ -106,7 +117,8 @@ class CoverageComparer(object):
               "reverse strand: %s" % self.no_of_mapped_reads_numerator_reverse)
 
     def calc_combined_factor(self):
-        self._numerator_rpm_factor = 1000000.0/float(self.no_of_mapped_reads_numerator)
+        self._numerator_rpm_factor = 1000000.0/float(
+            self.no_of_mapped_reads_numerator)
         self._denominator_rpm_factor = 1000000.0/float(
             self.no_of_mapped_reads_denominator)
         self._ratio_factor = float(self.no_of_mapped_reads_numerator)/float(
@@ -125,25 +137,48 @@ class CoverageComparer(object):
         print("RPM factor denominator: %s (1M/%s)" % (
             self._denominator_rpm_factor, self.no_of_mapped_reads_denominator))
 
+    def set_names(self):
+        if self._denominator_name is None:
+            self._denominator_name = self._file_name_to_name(
+                self._bam_file_denominator)
+        if self._numerator_name is None:
+            self._numerator_name = self._file_name_to_name(
+                self._bam_file_numerator)
+        if self._ratio_name is None:
+            self._ratio_name = "{}_vs_{}".format(
+                self._file_name_to_name(self._bam_file_denominator),
+                self._file_name_to_name(self._bam_file_numerator))
+        print(self._denominator_name, self._numerator_name, self._ratio_name)
+
+    def _file_name_to_name(self, file_name):
+        name = file_name.split("/")[-1].replace(".bam", "")
+        return name
+
     def write_numerator_and_denominator_wiggle_files(self):
         self._write_wiggle(
             self._calc_averaged_coverages(self.coverage_denominator),
-            "denominator", self._denominator_rpm_factor)
+            "denominator_{}".format(self._denominator_name),
+            self._denominator_rpm_factor)
         self._write_wiggle(
             self._calc_averaged_coverages(self.coverage_denominator_forward),
-            "denominator_forward", self._denominator_rpm_factor)
+            "denominator_{}_forward".format(self._denominator_name),
+            self._denominator_rpm_factor)
         self._write_wiggle(
             self._calc_averaged_coverages(self.coverage_numerator_forward),
-            "numerator_forward", self._numerator_rpm_factor)
+            "numerator_{}_forward".format(self._numerator_name),
+            self._numerator_rpm_factor)
         self._write_wiggle(
             self._calc_averaged_coverages(self.coverage_numerator),
-            "numerator", self._numerator_rpm_factor)
+            "numerator_{}".format(self._numerator_name),
+            self._numerator_rpm_factor)
         self._write_wiggle(
             self._calc_averaged_coverages(self.coverage_denominator_reverse),
-            "denominator_reverse", self._denominator_rpm_factor)
+            "denominator_{}_reverse".format(self._denominator_name),
+            self._denominator_rpm_factor)
         self._write_wiggle(
             self._calc_averaged_coverages(self.coverage_numerator_reverse),
-            "numerator_reverse", self._numerator_rpm_factor)
+            "numerator_reverse".format(self._numerator_name),
+            self._numerator_rpm_factor)
 
     def _calc_averaged_coverages(self, coverages):
         averaged_coverages = {}
@@ -154,18 +189,21 @@ class CoverageComparer(object):
 
     def write_ratio_wiggle_files(self):
         self._write_wiggle(
-            self.elements_and_coverage_ratios, "ratio", self._ratio_factor)
+            self.elements_and_coverage_ratios,
+            "ratio_{}".format(self._ratio_name), self._ratio_factor)
         self._write_wiggle(
-            self.elements_and_coverage_ratios_forward, "ratio_forward",
+            self.elements_and_coverage_ratios_forward,
+            "ratio_{}_forward".format(self._ratio_name),
             self._ratio_factor)
         self._write_wiggle(
-            self.elements_and_coverage_ratios_reverse, "ratio_reverse",
+            self.elements_and_coverage_ratios_reverse,
+            "ratio_{}_reverse".format(self._ratio_name),
             self._ratio_factor)
 
     def _write_wiggle(self, elements_and_coverages, name, factor):
         output_fh = open("%s-%s.wig" % (self._output_prefix, name), "w")
         output_fh.write("track type=wiggle_0 name=\"%s_%s\"\n" % (
-            name, self._output_prefix.split("/")[-1]))
+            self._output_prefix.split("/")[-1], name))
         for element in sorted(elements_and_coverages.keys()):
             output_fh.write("variableStep chrom=%s span=1\n" % (element))
             # Remove position with as coverage of 0. pos is increased
