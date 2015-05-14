@@ -15,13 +15,42 @@ def main():
         help="show version")
     subparsers = parser.add_subparsers(help="commands")
 
+    ratio_plot_parser = subparsers.add_parser(
+                "ratio", help="Generate ratio plots of two alignment files.")
+    ratio_plot_parser.add_argument("denominator_bam_file")
+    ratio_plot_parser.add_argument("numerator_bam_file")
+    ratio_plot_parser.add_argument(
+        "--output", "-o", dest="output_prefix",
+        default="numerator_seq", required=False)
+    ratio_plot_parser.add_argument(
+        "--window_size", type=int, default=None,
+        help="Window size for sliding window average calculation.")
+    ratio_plot_parser.add_argument(
+        "--step_size", type=int, default=1,
+        help="Step size for sliding window average calculation."
+        " Default is 1.")
+    ratio_plot_parser.set_defaults(func=plot_ratios)
+    ratio_plot_parser.add_argument("--factor", type=float, default=None,
+                        help="A factor the final ratio is multiplied with.")
+    ratio_plot_parser.add_argument(
+        "--keep_zero_coverage", default=False, action="store_true",
+        help="Also write positions that have a coverage of 0. "
+        "Default is to discard those.")
+    ratio_plot_parser.add_argument("--denominator_name", default=None)
+    ratio_plot_parser.add_argument("--numerator_name", default=None)
+    ratio_plot_parser.add_argument("--ratio_name", default=None)
+    
     args = parser.parse_args()
     if args.version is True:
         print("COVERnant version " + __version__)
     elif "func" in dir(args):
-        controller = Controller(args)
-        args.func(controller)
+        pass
+        #controller = Controller(args)
+        #args.func(controller)
     else:
         parser.print_help()
-    
+
+def plot_ratios():
+    pass
+        
 main()
