@@ -1,6 +1,7 @@
 import csv
 from datetime import datetime
 import sys
+import math
 import numpy as np
 from covernantlib.wiggle import WiggleParser
 
@@ -8,7 +9,8 @@ from covernantlib.wiggle import WiggleParser
 def extract(args):
     coverage_extractor = CoverageExtractor(
         args.position_file, args.coverage_file, args.output_prefix,
-        args.flip_reverse_strand)
+        args.flip_reverse_strand, args.ignore_zeros,
+        args.skip_missing_coverages)
     log("Reading wiggle file")
     coverage_extractor.read_wiggle_file()
     log("Reading position files")
@@ -25,11 +27,13 @@ def log(msg):
 class CoverageExtractor(object):
     """ """
     def __init__(self, position_file, coverage_file, output_prefix,
-                 flip_reverse_strand):
+                 flip_reverse_strand, ignore_zeros, skip_missing_coverages):
         self._position_file = position_file
         self._coverage_file = coverage_file
         self._output_prefix = output_prefix
         self._flip_reverse_strand = flip_reverse_strand
+        self._ignore_zeros = ignore_zeros
+        self._skip_missing_coverages = skip_missing_coverages
         self._replicons_and_coverages = {}
         self._all_coverage_lists = []
 
@@ -65,9 +69,10 @@ class CoverageExtractor(object):
         for coverage_list in self._all_coverage_lists:
             no_of_gaps_to_add_to_sides = round((
                 max_list_length - len(coverage_list))/2)
+            filler = np.nan if self._skip_missing_coverages else 0.0
             coverage_list = [
-                0.0] * no_of_gaps_to_add_to_sides + coverage_list + [
-                    0.0] * no_of_gaps_to_add_to_sides
+                filler] * no_of_gaps_to_add_to_sides + coverage_list + [
+                    filler] * no_of_gaps_to_add_to_sides
             matrix.append(coverage_list)
         matrix = np.array(matrix)
         output_fh = open("{}_combined.csv".format(self._output_prefix), "w")
@@ -76,6 +81,11 @@ class CoverageExtractor(object):
         for pos in range(max_list_length):
             column = matrix[:, pos]
             shifted_pos = pos - (max_list_length/2)
+            if self._ignore_zeros:
+                column = np.array(list(filter(lambda cov: cov != 0.0, column)))
+            if self._skip_missing_coverages:
+                column = np.array(
+                    list(filter(lambda cov: not math.isnan(cov), column)))
             if np.sum(column) == 0.0:
                 continue
             output_fh.write("\t".join([str(cell) for cell in [
