@@ -19,6 +19,7 @@ def main():
 
     ratio_plot_parser = subparsers.add_parser(
                 "ratio", help="Generate ratio plots of two alignment files.")
+    ratio_plot_parser.set_defaults(func=plot_ratios)
     ratio_plot_parser.add_argument("denominator_bam_file")
     ratio_plot_parser.add_argument("numerator_bam_file")
     ratio_plot_parser.add_argument(
@@ -32,7 +33,6 @@ def main():
         "--step_size", type=int, default=1,
         help="Step size for sliding window average calculation."
         " Default is 1.")
-    ratio_plot_parser.set_defaults(func=plot_ratios)
     ratio_plot_parser.add_argument("--factor", type=float, default=None,
                         help="A factor the final ratio is multiplied with.")
     ratio_plot_parser.add_argument(
@@ -45,10 +45,13 @@ def main():
 
     extract_parser = subparsers.add_parser(
                 "extract", help="Extract coverage values from wiggle file.")
+    extract_parser.set_defaults(func=extract_coverages)
     extract_parser.add_argument("coverage_file")
     extract_parser.add_argument("position_file")
     extract_parser.add_argument("--output_prefix", default="output")
-    extract_parser.add_argument("--pos_range", type=int)
+    extract_parser.add_argument("--flip_reverse_strand", default=False,
+                            action="store_true",
+                            help="Flip the coverage value list of entries located at the minus strand")
     
     args = parser.parse_args()
     if args.version is True:
@@ -61,7 +64,7 @@ def main():
 def plot_ratios(args):
     ratio.calc_ratio(args)
 
-def extract(args):
+def extract_coverages(args):
     extract.extract(args)
     
 main()
