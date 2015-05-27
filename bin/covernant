@@ -2,12 +2,14 @@
 
 import argparse
 from covernantlib import ratio
+from covernantlib import extract
 
 __author__ = "Konrad Foerstner <konrad@foerstner.org>"
 __copyright__ = "2013-2015 by Konrad Foerstner <konrad@foerstner.org>"
 __license__ = "ISC license"
 __email__ = "konrad@foerstner.org"
 __version__ = "0.1dev"
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -17,7 +19,8 @@ def main():
     subparsers = parser.add_subparsers(help="commands")
 
     ratio_plot_parser = subparsers.add_parser(
-                "ratio", help="Generate ratio plots of two alignment files.")
+        "ratio", help="Generate ratio plots of two alignment files.")
+    ratio_plot_parser.set_defaults(func=plot_ratios)
     ratio_plot_parser.add_argument("denominator_bam_file")
     ratio_plot_parser.add_argument("numerator_bam_file")
     ratio_plot_parser.add_argument(
@@ -31,9 +34,9 @@ def main():
         "--step_size", type=int, default=1,
         help="Step size for sliding window average calculation."
         " Default is 1.")
-    ratio_plot_parser.set_defaults(func=plot_ratios)
-    ratio_plot_parser.add_argument("--factor", type=float, default=None,
-                        help="A factor the final ratio is multiplied with.")
+    ratio_plot_parser.add_argument(
+        "--factor", type=float, default=None,
+        help="A factor the final ratio is multiplied with.")
     ratio_plot_parser.add_argument(
         "--keep_zero_coverage", default=False, action="store_true",
         help="Also write positions that have a coverage of 0. "
@@ -41,7 +44,30 @@ def main():
     ratio_plot_parser.add_argument("--denominator_name", default=None)
     ratio_plot_parser.add_argument("--numerator_name", default=None)
     ratio_plot_parser.add_argument("--ratio_name", default=None)
-    
+
+    extract_parser = subparsers.add_parser(
+        "extract", help="Extract coverage values from wiggle file.")
+    extract_parser.set_defaults(func=extract_coverages)
+    extract_parser.add_argument("coverage_file")
+    extract_parser.add_argument("position_file")
+    extract_parser.add_argument("--output_prefix", default="output")
+    extract_parser.add_argument(
+        "--flip_reverse_strand", default=False,
+        action="store_true",
+        help="Flip the coverage value list of entries located at the minus "
+        "strand")
+    extract_parser.add_argument(
+        "--ignore_zeros", default=False,
+        action="store_true",
+        help="Ignore zeros when calculation averages and median.")
+    extract_parser.add_argument(
+        "--skip_missing_coverages", default=False,
+        action="store_true",
+        help="Per default the coverage list of each entriy is filled from both"
+        "end with zeros to get to the lenght of the longest entry. Those zeros"
+        "are used in the average and mean calculation. If this flag is used "
+        "those position will not be considered during this calculation.")
+
     args = parser.parse_args()
     if args.version is True:
         print("COVERnant version " + __version__)
@@ -50,7 +76,12 @@ def main():
     else:
         parser.print_help()
 
+
 def plot_ratios(args):
     ratio.calc_ratio(args)
-        
+
+
+def extract_coverages(args):
+    extract.extract(args)
+
 main()
