@@ -17,7 +17,6 @@ def calc_ratio(args):
 class CoverageRatioCalculator(object):
 
     def __init__(self, args):
-        print(args)
         self._denominator_bam_file = args.denominator_bam_file
         self._numerator_bam_file = args.numerator_bam_file
         self._output_prefix = args.output_prefix
@@ -135,6 +134,9 @@ class CoverageRatioCalculator(object):
 
     def _calc_averaged_coverages(self, coverages):
         averaged_coverages = {}
+        # TODO - CHECK
+        if self._window_size is None:
+            self._window_size = 1
         for element, element_coverages in coverages.items():
             averaged_coverages[element] = self._sliding_windows_average(
                 element_coverages)
