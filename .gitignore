@@ -1,2 +1,5 @@
 *pyc
 *~
+
+# Folder link only for needed for development
+bin/covernantlib
