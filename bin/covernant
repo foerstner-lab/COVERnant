@@ -39,7 +39,7 @@ def main():
         help="A factor the final ratio is multiplied with.")
     ratio_plot_parser.add_argument(
         "--keep_zero_coverage", default=False, action="store_true",
-        help="Also write positions that have a coverage of 0. "
+        help="Also write coordinates that have a coverage of 0. "
         "Default is to discard those.")
     ratio_plot_parser.add_argument("--denominator_name", default=None)
     ratio_plot_parser.add_argument("--numerator_name", default=None)
@@ -49,7 +49,7 @@ def main():
         "extract", help="Extract coverage values from wiggle file.")
     extract_parser.set_defaults(func=extract_coverages)
     extract_parser.add_argument("coverage_file")
-    extract_parser.add_argument("position_file")
+    extract_parser.add_argument("coordinate_file")
     extract_parser.add_argument("--output_prefix", default="output")
     extract_parser.add_argument(
         "--flip_reverse_strand", default=False,
@@ -57,16 +57,8 @@ def main():
         help="Flip the coverage value list of entries located at the minus "
         "strand")
     extract_parser.add_argument(
-        "--ignore_zeros", default=False,
-        action="store_true",
-        help="Ignore zeros when calculation averages and median.")
-    extract_parser.add_argument(
-        "--skip_missing_coverages", default=False,
-        action="store_true",
-        help="Per default the coverage list of each entriy is filled from both"
-        "end with zeros to get to the lenght of the longest entry. Those zeros"
-        "are used in the average and mean calculation. If this flag is used "
-        "those position will not be considered during this calculation.")
+        "--matrix_alignment", choices=["left", "center", "right"], default="left",
+        help="default is 'left'.")
 
     args = parser.parse_args()
     if args.version is True:
@@ -76,10 +68,8 @@ def main():
     else:
         parser.print_help()
 
-
 def plot_ratios(args):
     ratio.calc_ratio(args)
-
 
 def extract_coverages(args):
     extract.extract(args)
