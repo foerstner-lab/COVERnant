@@ -10,8 +10,7 @@ from covernantlib.wiggle import WiggleParser
 def extract(args):
     coverage_extractor = CoverageExtractor(
         args.coordinate_file, args.coverage_file, args.output_prefix,
-        args.flip_reverse_strand, args.ignore_zeros,
-        args.skip_missing_coverages, args.matrix_alignment)
+        args.flip_reverse_strand, args.matrix_alignment)
     log("Reading wiggle file")
     coverage_extractor.read_wiggle_file()
     log("Reading coordinate files")
@@ -33,14 +32,11 @@ def log(msg):
 class CoverageExtractor(object):
     """ """
     def __init__(self, coordinate_file, coverage_file, output_prefix,
-                 flip_reverse_strand, ignore_zeros, skip_missing_coverages,
-                 matrix_alignment):
+                 flip_reverse_strand, matrix_alignment):
         self._coordinate_file = coordinate_file
         self._coverage_file = coverage_file
         self._output_prefix = output_prefix
         self._flip_reverse_strand = flip_reverse_strand
-        self._ignore_zeros = ignore_zeros
-        self._skip_missing_coverages = skip_missing_coverages
         self._matrix_alignment = matrix_alignment
         self._replicons_and_coverages = {}
         self._coordinates = []
