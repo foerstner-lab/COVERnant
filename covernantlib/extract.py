@@ -91,7 +91,7 @@ class CoverageExtractor(object):
                 row_df, ignore_index=True)
 
     def _align_coverages(self, coverages, max_range):
-        filling = np.nan if self._skip_missing_coverages else 0.0
+        filling = np.nan
         aligned_coverages = list(np.full(max_range, filling))
         if self._matrix_alignment == "left":
             aligned_coverages[:len(coverages)] = coverages
