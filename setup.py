@@ -14,6 +14,7 @@ setup(
     description='A tool for DNA/RNA coverage creation and manipulation.',
     url='',
     install_requires=[
+        "matplotlib >= 1.4.3",
         "pandas >= 0.15.2",
         "pysam >= 0.8.1",
         "numpy >= 1.9.2"
