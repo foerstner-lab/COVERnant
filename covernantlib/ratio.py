@@ -30,6 +30,7 @@ class CoverageRatioCalculator(object):
         self._denominator_name = args.denominator_name
         self._numerator_name = args.numerator_name
         self._ratio_name = args.ratio_name
+        self._paired_end = args.paired_end
 
     def calc_coverages(self):
         self._print_file_names()
@@ -228,7 +229,7 @@ class CoverageRatioCalculator(object):
         ref_seq_and_coverages_reverse = {}
         coverage_calculator = CoverageCalculator(
             read_count_splitting=False, uniqueley_aligned_only=False,
-            first_base_only=False)
+            first_base_only=False, paired_end=self._paired_end)
         for ref_seq, coverages in coverage_calculator.ref_seq_and_coverages(
                 bam_file):
             assert len(coverages["forward"]) == len(coverages["reverse"])
@@ -243,8 +244,8 @@ class CoverageRatioCalculator(object):
                 abs(cor_rev) for cor_rev in coverages["reverse"]]
         print("Number of used alignments: {}".format(
             coverage_calculator.used_alignmets))
-        print("Number of discarded alignments: {}".format(
-            coverage_calculator.discared_alignments))
+        # print("Number of discarded alignments: {}".format(
+        #     coverage_calculator.discared_alignments))
         return (ref_seq_and_coverages_sum, ref_seq_and_coverages_forward,
                 ref_seq_and_coverages_reverse)
 

@@ -28,6 +28,10 @@ def main():
         "--output", "-o", dest="output_prefix",
         default="numerator_seq", required=False)
     ratio_plot_parser.add_argument(
+        "--paired_end", default=False, action="store_true",
+        help="Paire reads are treated as one fragment an the start and "
+        "end positions are used accordingly")
+    ratio_plot_parser.add_argument(
         "--window_size", type=int, default=None,
         help="Window size for sliding window average calculation. "
         "Must be an odd number.")
