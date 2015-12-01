@@ -64,6 +64,14 @@ def main():
     extract_parser.add_argument(
         "--matrix_alignment", choices=["left", "center", "right"], default="left",
         help="default is 'left'.")
+    extract_parser.add_argument(
+        "--window_size", type=int, default=None,
+        help="Window size for sliding window average calculation. "
+        "Must be an odd number.")
+    extract_parser.add_argument(
+        "--step_size", type=int, default=1,
+        help="Step size for sliding window average calculation."
+        " Default is 1.")
 
     plot_matrix_parser = subparsers.add_parser(
         "plot_matrix", help="Plot the content of the extracted coverage "
