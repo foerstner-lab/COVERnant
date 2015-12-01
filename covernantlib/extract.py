@@ -10,7 +10,8 @@ from covernantlib.wiggle import WiggleParser
 def extract(args):
     coverage_extractor = CoverageExtractor(
         args.coordinate_file, args.coverage_file, args.output_prefix,
-        args.flip_reverse_strand, args.matrix_alignment)
+        args.flip_reverse_strand, args.matrix_alignment, args.window_size,
+        args.step_size)
     log("Reading wiggle file")
     coverage_extractor.read_wiggle_file()
     log("Reading coordinate files")
@@ -32,7 +33,8 @@ def log(msg):
 class CoverageExtractor(object):
     """ """
     def __init__(self, coordinate_file, coverage_file, output_prefix,
-                 flip_reverse_strand, matrix_alignment):
+                 flip_reverse_strand, matrix_alignment, window_size,
+                 step_size):
         self._coordinate_file = coordinate_file
         self._coverage_file = coverage_file
         self._output_prefix = output_prefix
@@ -41,6 +43,8 @@ class CoverageExtractor(object):
         self._replicons_and_coverages = {}
         self._coordinates = []
         self._coverage_lists = []
+        self._window_size = window_size
+        self._step_size = step_size
 
     def read_wiggle_file(self):
         wiggle_parser = WiggleParser()
@@ -84,8 +88,20 @@ class CoverageExtractor(object):
         for coordinate, coverages in zip(
                 self._coordinates, self._coverage_lists):
             aligned_coverages = self._align_coverages(coverages, max_range)
-            row = [coordinate[key] for key in
-                   ["replicon", "start", "end", "strand"]] + aligned_coverages
+            if self._window_size == 1 and self._step_size == 1:
+                row = [coordinate[key] for key in
+                       ["replicon", "start", "end",
+                        "strand"]] + aligned_coverages
+            else:
+                row = [coordinate[key] for key in
+                       ["replicon", "start", "end", "strand"]]
+                for pos in range(int(self._window_size/2) + 1,
+                                 max_range - int(self._window_size/2) + 1,
+                                 self._step_size):
+                    start = pos-int(self._window_size/2)
+                    end = pos+int(self._window_size/2)
+                    coverages = aligned_coverages[start:end]
+                    row.append(np.mean(coverages))
             row_df = self._init_coverage_dataframe(max_range, [row])
             self._coverage_df = self._coverage_df.append(
                 row_df, ignore_index=True)
@@ -111,7 +127,9 @@ class CoverageExtractor(object):
         """
         return pd.DataFrame(
             data, columns=["Replicon", "Start", "End", "Strand"] +
-            list(range(1, max_range + 1)))
+            list(range(int(self._window_size/2) + 1,
+                       max_range - int(self._window_size/2) + 1,
+                       self._step_size)))
 
     def write_matrix_to_file(self):
         self._coverage_df.to_csv(
