@@ -174,14 +174,21 @@ class CoverageRatioCalculator(object):
         output_fh.close()
 
     def _pos_and_coverages(self, coverages):
-        if self._keep_zero_coverage is False:
+        if not self._keep_zero_coverage:
+            # As the values between the nucleotides selected by the
+            # step size are zero only the selected nucleotides will be
+            # returned due to this filter.
             for pos, coverage in filter(
                 lambda pos_and_cov: pos_and_cov[1] != 0.0,
                     enumerate(coverages)):
                 yield (pos, coverage)
         else:
-            for pos, coverage in enumerate(coverages):
-                yield (pos, coverage)
+            # Here the step size has to be used explicitly to return
+            # the selected nucleotide
+            for pos in range(int(self._window_size/2),
+                             len(coverages) - int(self._window_size/2),
+                             self._step_size):
+                yield (pos, coverages[pos])
 
     def compare(self):
         self.elements_and_coverage_ratios = {}
