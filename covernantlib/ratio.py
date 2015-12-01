@@ -35,7 +35,7 @@ class CoverageRatioCalculator(object):
     def calc_coverages(self):
         self._print_file_names()
         (self.no_of_mapped_reads_numerator,
-         self.no_of_mapped_reads_numerator_forward,
+        self.no_of_mapped_reads_numerator_forward,
          self.no_of_mapped_reads_numerator_reverse
         ) = self._count_no_of_mapped_reads(
             self._numerator_bam_file)
@@ -242,7 +242,7 @@ class CoverageRatioCalculator(object):
             assert len(coverages["forward"]) == len(coverages["reverse"])
             # Sum up the coverage of the forward and reverse strand
             summed_coverage = [
-                abs(cov_for) + abs(cor_rev) for cov_for, cor_rev 
+                abs(cov_for) + abs(cor_rev) for cov_for, cor_rev
                 in zip(coverages["forward"], coverages["reverse"])]
             ref_seq_and_coverages_sum[ref_seq] = summed_coverage
             ref_seq_and_coverages_forward[ref_seq] = [
@@ -262,7 +262,7 @@ class CoverageRatioCalculator(object):
               self._numerator_bam_file)
         print("- Input file with denominator data: %s" %
               self._denominator_bam_file)
-        print("- Output file prefix : %s" % self._output_prefix)
+        print("- Output file prefix: %s" % self._output_prefix)
 
     def _sliding_windows_average(self, coverages):
         averaged_coverages = [0] * len(coverages)
@@ -284,7 +284,7 @@ class CoverageRatioCalculator(object):
                     reads_forward.add(read.qname)
                 else:
                     reads_reverse.add(read.qname)
-        return(len(reads_forward) + len(reads_reverse), len(reads_forward), 
+        return(len(reads_forward) + len(reads_reverse), len(reads_forward),
                len(reads_reverse))
 
     def _ratio(self, mult, div):
@@ -292,6 +292,3 @@ class CoverageRatioCalculator(object):
             return(mult/div)
         except:
             return(0.0)
-
-if __name__ == "__main__":
-   main()
