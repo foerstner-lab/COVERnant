@@ -165,16 +165,31 @@ class CoverageExtractor(object):
                 column.median(),
                 column.mean(),
                 column.std(),
-                np.median(column_without_zeros),
-                np.mean(column_without_zeros),
-                np.std(column_without_zeros),
-                np.median(column_without_na),
-                np.mean(column_without_na),
-                np.std(column_without_na),
-                np.median(column_without_zeros_and_na),
-                np.mean(column_without_zeros_and_na),
-                np.std(column_without_zeros_and_na)
+                self._save_column_operation(np.median, column_without_zeros),
+                self._save_column_operation(np.mean, column_without_zeros),
+                self._save_column_operation(np.std, column_without_zeros),
+                self._save_column_operation(np.median, column_without_na),
+                self._save_column_operation(np.mean, column_without_na),
+                self._save_column_operation(np.std, column_without_na),
+                self._save_column_operation(np.median, column_without_zeros_and_na),
+                self._save_column_operation(np.mean, column_without_zeros_and_na),
+                self._save_column_operation(np.std, column_without_zeros_and_na)
+                # np.median(column_without_zeros),
+                # np.mean(column_without_zeros),
+                # np.std(column_without_zeros),
+                # np.median(column_without_na),
+                # np.mean(column_without_na),
+                # np.std(column_without_na),
+                # np.median(column_without_zeros_and_na),
+                # np.mean(column_without_zeros_and_na),
+                # np.std(column_without_zeros_and_na)
             ]
         average_df.to_csv(
             "{}_averages.csv".format(self._output_prefix),
             sep="\t", index=False)
+
+    def _save_column_operation(self, function, column):
+        if len(column) > 0:
+            return function(column)
+        else:
+            return "-"

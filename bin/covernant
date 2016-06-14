@@ -32,9 +32,9 @@ def main():
         help="Paire reads are treated as one fragment an the start and "
         "end positions are used accordingly")
     ratio_plot_parser.add_argument(
-        "--window_size", type=int, default=None,
+        "--window_size", type=int, default=1,
         help="Window size for sliding window average calculation. "
-        "Must be an odd number.")
+        "Must be an odd number. (Default is 1).")
     ratio_plot_parser.add_argument(
         "--step_size", type=int, default=1,
         help="Step size for sliding window average calculation."
