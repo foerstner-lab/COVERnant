@@ -1,3 +1,3 @@
 # COVERnant
 
-A tool to generate and minipulate coverage plots based on BAM files.
+A tool to generate and manipulate coverage plots based on BAM files.
