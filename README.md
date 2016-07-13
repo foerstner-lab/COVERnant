@@ -24,17 +24,7 @@ optional arguments:
 
 ```
 $ covernant ratio -h
-usage: covernant ratio [-h] [--output OUTPUT_PREFIX] [--paired_end]
-                       [--window_size WINDOW_SIZE] [--step_size STEP_SIZE]
-                       [--factor FACTOR] [--keep_zero_coverage]
-                       [--denominator_name DENOMINATOR_NAME]
-                       [--numerator_name NUMERATOR_NAME]
-                       [--ratio_name RATIO_NAME]
-                       denominator_bam_file numerator_bam_file
-covernant ratio: error: the following arguments are required: denominator_bam_file, numerator_bam_file
 
-
-covernant ratio -h
 usage: covernant ratio [-h] [--output OUTPUT_PREFIX] [--paired_end]
                        [--window_size WINDOW_SIZE] [--step_size STEP_SIZE]
                        [--factor FACTOR] [--keep_zero_coverage]
@@ -120,7 +110,4 @@ optional arguments:
 $ covernant bed_to_wig -h
 usage: covernant bed_to_wig [-h] [--output_prefix OUTPUT_PREFIX]
                             [--window_size WINDOW_SIZE]
-
 ```
-
-
