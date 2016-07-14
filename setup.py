@@ -11,13 +11,15 @@ setup(
     packages=['covernantlib'],
     author='Konrad U. Förstner',
     author_email='konrad@foerstner.org',
-    description='A tool for DNA/RNA coverage creation and manipulation.',
-    url='',
+    description='A tool to generate and manipulate coverage plots of '
+    'high-throughput sequencing data.',
+    url='https://github.com/konrad/COVERnant',
     install_requires=[
-        "matplotlib >= 1.4.3",
-        "pandas >= 0.15.2",
-        "pysam >= 0.8.1",
-        "numpy >= 1.9.2"
+        "pybedtools >= 0.7.7",
+        "matplotlib >= 1.5.1",
+        "pandas >= 0.18.1",
+        "pysam >= 0.9.1.3",
+        "numpy >= 1.11.1"
     ],
     scripts=['bin/covernant'],
     license='ISC License (ISCL)',
