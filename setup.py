@@ -7,7 +7,7 @@ except ImportError:
 
 setup(
     name='COVERnant',
-    version='0.1dev',
+    version='0.1',
     packages=['covernantlib'],
     author='Konrad U. Förstner',
     author_email='konrad@foerstner.org',
