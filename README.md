@@ -1,3 +1,7 @@
+[![Latest Version](https://img.shields.io/pypi/v/covernant.svg)](https://pypi.python.org/pypi/COVERnant/)
+[![License](https://img.shields.io/pypi/l/covernant.svg)](https://pypi.python.org/pypi/COVERnant/)
+[![DOI](https://zenodo.org/badge/2756/konrad/COVERnant.svg)](https://zenodo.org/badge/latestdoi/2756/konrad/COVERnant)
+
 # COVERnant
 
 COVERnant is a tool for the generation and manipulation of coverage
