@@ -47,3 +47,11 @@ new_release:
 	@echo " $ git push"
 	@echo "* Generate a new release based on this tag at"
 	@echo "  https://github.com/konrad/COVERnant/releases/new"
+
+test_package:
+	@echo "$$ make package"
+	@echo "$$ virtualenv covernant_test"
+	@echo "$$ cd covernant_test"
+	@echo "$$ source bin/activate"
+	@echo "$$ pip3 install ../dist/COVERnant-*-py3-none-any.whl"
+	@echo "$$ bin/covernant"
