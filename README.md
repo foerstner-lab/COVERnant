@@ -1,9 +1,14 @@
 # COVERnant
 
-A tool to generate and manipulate coverage plots of high-throughput sequencing data.
+COVERnant is a tool for the generation and manipulation of coverage
+files (currently in wiggle format) of high-throughput sequencing data.
 
+The tool is currently in an **early development stage**.
+
+COVERnant has several subcommands as its command line help shows:
 
 ```
+$ covernant
 usage: covernant [-h] [--version] {ratio,extract,plot_matrix,bed_to_wig} ...
 
 positional arguments:
@@ -19,12 +24,10 @@ optional arguments:
   --version, -v         show version
 ```
 
-
 ## Subcommand `ratio`
 
 ```
 $ covernant ratio -h
-
 usage: covernant ratio [-h] [--output OUTPUT_PREFIX] [--paired_end]
                        [--window_size WINDOW_SIZE] [--step_size STEP_SIZE]
                        [--factor FACTOR] [--keep_zero_coverage]

@@ -1,5 +1,3 @@
-import csv
-
 class WiggleParser(object):
     """
 
@@ -51,6 +49,7 @@ class WiggleParser(object):
             attrs_and_values[attr] = value
         return attrs_and_values
 
+
 class WiggleEntry(object):
 
     def __init__(self, track_name, replicon, span, pos_value_pairs):
@@ -58,6 +57,7 @@ class WiggleEntry(object):
         self.replicon = replicon
         self.span = span
         self.pos_value_pairs = pos_value_pairs
+
 
 class WiggleWriter(object):
 

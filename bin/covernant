@@ -22,7 +22,7 @@ def main():
     subparsers = parser.add_subparsers(help="commands")
 
     ratio_plot_parser = subparsers.add_parser(
-        "ratio", help="Generate ratio plots of two alignment files.")
+        "ratio", help="Generate ratio plots of two alignment files in Bam formar.")
     ratio_plot_parser.set_defaults(func=plot_ratios)
     ratio_plot_parser.add_argument("denominator_bam_file")
     ratio_plot_parser.add_argument("numerator_bam_file")
@@ -31,7 +31,7 @@ def main():
         default="numerator_seq", required=False)
     ratio_plot_parser.add_argument(
         "--paired_end", default=False, action="store_true",
-        help="Paire reads are treated as one fragment an the start and "
+        help="Paired reads are treated as one fragment an the start and "
         "end positions are used accordingly")
     ratio_plot_parser.add_argument(
         "--window_size", type=int, default=1,
@@ -90,7 +90,7 @@ def main():
             help="Use the same maximum y value in all plots.")
 
     bed_to_wiggle_parser = subparsers.add_parser(
-        "bed_to_wig", help="Converts Bed file to coverage in wiggle formats")
+        "bed_to_wig", help="Converts Bed files to coverage files in wiggle formats")
     bed_to_wiggle_parser.set_defaults(func=bed_to_wig)
     bed_to_wiggle_parser.add_argument("input_file", help="Input Bed file")
     bed_to_wiggle_parser.add_argument("--output_prefix", default="output")
