@@ -13,4 +13,24 @@ md_to_html:
 	pandoc README.md > README.html
 
 clean:
-	rm -f README.html *~
+	rm -rf README.html *~ build COVERnant.egg-info dist
+
+pylint:
+	pylint bin/bin covernantlib/* tests/*
+
+new_release:
+	@echo "* Create/checkout a release branch"
+	@echo "  git branch release_v0.X"
+	@echo "  git checkout release_v0.X"
+	@echo "* Change bin/covernant"
+	@echo "* Change setup.py"
+	@echo "* Change CHANGELOG.txt"
+	@echo "* Test package creation"
+	@echo "* make package_to_pypi"
+	@echo "* git add CHANGELOG.txt bin/covernant setup.py"
+	@echo "* Commit changes e.g. 'git commit -m \"Set version to 0.X\"'"
+	@echo "* Tag the commit e.g. 'git tag -a v0.X -m \"version v0.X\"'"
+	@echo "* Merge release into dev and master"
+	@echo "* Push it to github: git push"
+	@echo "* Generate a new release based on this tag at"
+	@echo "  https://github.com/konrad/COVERnant/releases/new"
