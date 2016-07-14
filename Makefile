@@ -18,6 +18,10 @@ clean:
 pylint:
 	pylint bin/bin covernantlib/* tests/*
 
+pypi_submission:
+	python3 setup.py bdist_wheel upload
+	@echo "Go to https://pypi.python.org/pypi/COVERnant/"
+
 new_release:
 	@echo "* Create/checkout a release branch"
 	@echo "  git branch release_v0.X"
