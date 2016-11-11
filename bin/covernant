@@ -5,13 +5,14 @@ from covernantlib import bedtowiggle
 from covernantlib import extract
 from covernantlib import plotmatrix
 from covernantlib import ratio
+from covernantlib import rescalewig
 
 
 __author__ = "Konrad Foerstner <konrad@foerstner.org>"
 __copyright__ = "2013-2016 by Konrad Foerstner <konrad@foerstner.org>"
 __license__ = "ISC license"
 __email__ = "konrad@foerstner.org"
-__version__ = "0.1"
+__version__ = "0.2dev"
 
 
 def main():
@@ -96,6 +97,15 @@ def main():
     bed_to_wiggle_parser.add_argument("--output_prefix", default="output")
     bed_to_wiggle_parser.add_argument("--window_size", default="1", type=int)
     bed_to_wiggle_parser.add_argument("--step_size", default="1", type=int)
+
+
+    rescale_wiggle_parser = subparsers.add_parser(
+        "rescale_wig", help="Multiplies each value of a wiggle file with a"
+        " given factor.")
+    rescale_wiggle_parser.set_defaults(func=rescale_wiggle)
+    rescale_wiggle_parser.add_argument("input_file", help="Input wiggle file")
+    rescale_wiggle_parser.add_argument("factor", type=float, default=1.0)
+    rescale_wiggle_parser.add_argument("--output_prefix", default="output")
     
     args = parser.parse_args()
     if args.version is True:
@@ -117,5 +127,8 @@ def plot_matrix(args):
 def bed_to_wig(args):
     bedtowiggle.bed_to_wiggle(
         args.input_file, args.output_prefix, args.window_size, args.step_size)
+
+def rescale_wiggle(args):
+    rescalewig.rescale_wiggle(args)
     
 main()
