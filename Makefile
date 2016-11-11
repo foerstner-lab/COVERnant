@@ -2,7 +2,7 @@ test:
 	python3 tests/test_all.py
 
 package:
-	python3 setup.py bdist_wheel
+	python3 setup.py bdist
 
 readme_rst:
 	grep -v "^\[!" README.md | sed -e "1d" > README.md.tmp
@@ -19,7 +19,7 @@ pylint:
 	pylint bin/bin covernantlib/* tests/*
 
 pypi_submission:
-	python3 setup.py bdist_wheel upload
+	python3 setup.py bdist upload
 	@echo "Go to https://pypi.python.org/pypi/COVERnant/"
 
 new_release:
