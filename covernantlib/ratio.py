@@ -26,6 +26,8 @@ class CoverageRatioCalculator(object):
         self._window_size = args.window_size
         self._step_size = args.step_size
         self._factor = args.factor
+        self._factor_numerator = args.factor_numerator
+        self._factor_denominator = args.factor_denominator
         self._keep_zero_coverage = args.keep_zero_coverage
         self._denominator_name = args.denominator_name
         self._numerator_name = args.numerator_name
@@ -81,10 +83,25 @@ class CoverageRatioCalculator(object):
             print("Ratio factor: %s (%s/%s * %s) " % (
                 self._ratio_factor, self.no_of_mapped_reads_numerator,
                 self.no_of_mapped_reads_denominator, self._factor))
+        elif (self._factor_numerator is not None or
+              self._factor_denominator is not None):
+            # TODO! Improve this part
+            if self._factor_numerator is None:
+                self._factor_numerator = 1.0
+            if self._factor_denominator is None:
+                self._factor_denominator = 1.0
+            self._numerator_rpm_factor = self._factor_numerator
+            self._denominator_rpm_factor = self._factor_denominator
+            self._ratio_factor = float(self._factor_numerator)/float(
+                self._factor_denominator)
+            print("Factor numerator: %s (manually set)" % (
+                self._numerator_rpm_factor))
+            print("Factor denominator: %s (manually set)" % (
+                self._denominator_rpm_factor))
         else:
             print("Ratio factor: %s (%s/%s) " % (
                 self._ratio_factor, self.no_of_mapped_reads_numerator,
-                self.no_of_mapped_reads_denominator,))
+                self.no_of_mapped_reads_denominator))
         print("RPM factor numerator: %s (1M/%s)" % (
             self._numerator_rpm_factor, self.no_of_mapped_reads_numerator))
         print("RPM factor denominator: %s (1M/%s)" % (

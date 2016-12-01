@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import sys
 from covernantlib import bedtowiggle
 from covernantlib import extract
 from covernantlib import plotmatrix
@@ -45,6 +46,12 @@ def main():
     ratio_plot_parser.add_argument(
         "--factor", type=float, default=None,
         help="A factor the final ratio is multiplied with.")
+    ratio_plot_parser.add_argument(
+        "--factor_numerator", type=float, default=None,
+        help="A factor the numerator values are are multiplied with.")
+    ratio_plot_parser.add_argument(
+        "--factor_denominator", type=float, default=None,
+        help="A factor the denominator values are are multiplied with.")
     ratio_plot_parser.add_argument(
         "--keep_zero_coverage", default=False, action="store_true",
         help="Also write coordinates that have a coverage of 0. "
@@ -116,6 +123,15 @@ def main():
         parser.print_help()
 
 def plot_ratios(args):
+    # This is a temporary solution and the solution should be
+    # reconsidered.
+    if args.factor is not None and (
+            args.factor_denominator is not None or
+            args.factor_numerator is not None):
+        sys.stderr.write(
+            "Error: --factor and --factor_denominator/--factor_numerator "
+            "cannot be used together!\n")
+        sys.exit()
     ratio.calc_ratio(args)
 
 def extract_coverages(args):
