@@ -1,5 +1,5 @@
 test:
-	python3 tests/test_all.py
+	python -m pytest
 
 package:
 	python3 setup.py bdist

@@ -1,5 +1,4 @@
 import sys
-sys.path.append(".")
 import unittest
 import pandas as pd
 from pandas.util.testing import assert_frame_equal
@@ -11,8 +10,8 @@ class TestCoverageExtractor(unittest.TestCase):
     def setUp(self):
         self.coverage_extractor = CoverageExtractor(
             coordinate_file="", coverage_file="", output_prefix="",
-            flip_reverse_strand=None, ignore_zeros=None,
-            skip_missing_coverages=None, matrix_alignment=None)
+            flip_reverse_strand=None, matrix_alignment=None,
+            window_size=1, step_size=1)
 
     def test_init_coverage_dataframe_1(self):
         df = self.coverage_extractor._init_coverage_dataframe(3)
@@ -26,7 +25,7 @@ class TestCoverageExtractor(unittest.TestCase):
         self.assertListEqual(
             list(df.columns),
             ['Replicon', 'Start', 'End', 'Strand', 1, 2, 3])
-        
+
     def test_generate_coverage_matrix(self):
         self.coverage_extractor._coverage_lists = [[9, 9, 9, 9]]
         self.coverage_extractor._coordinates = [
@@ -45,7 +44,7 @@ class TestCoverageExtractor(unittest.TestCase):
         self.assertEqual(
             self.coverage_extractor._align_coverages([1.0, 2.0, 3.0], 10),
             [1.0, 2.0, 3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-
+            
     def test_align_coverages_2(self):
         """Alignment center"""
         self.coverage_extractor._matrix_alignment = "center"
@@ -59,6 +58,3 @@ class TestCoverageExtractor(unittest.TestCase):
         self.assertEqual(
             self.coverage_extractor._align_coverages([1.0, 2.0, 3.0], 10),
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 2.0, 3.0])
-        
-if __name__ == "__main__":
-        unittest.main()
