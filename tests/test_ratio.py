@@ -52,11 +52,11 @@ class TestCoverageRatioCalculator(unittest.TestCase):
         self._coverage_ratio_calculator.no_of_mapped_reads_numerator = 10
         self._coverage_ratio_calculator.no_of_mapped_reads_denominator = 5
         self._coverage_ratio_calculator.calc_normalization_factors()
-        assert self._coverage_ratio_calculator._numerator_rpm_factor == (
+        assert self._coverage_ratio_calculator._numerator_cpm_factor == (
             100000.0)
-        assert self._coverage_ratio_calculator._denominator_rpm_factor == (
+        assert self._coverage_ratio_calculator._denominator_cpm_factor == (
             200000.0)
-        assert self._coverage_ratio_calculator._ratio_factor == 2.0
+        assert self._coverage_ratio_calculator._ratio_factor == 0.5
         
     def test_calc_normalization_factors_2(self):
         """In case a factor is given it will the ratio will be multiplied by
@@ -66,11 +66,11 @@ class TestCoverageRatioCalculator(unittest.TestCase):
         self._coverage_ratio_calculator.no_of_mapped_reads_denominator = 5
         self._coverage_ratio_calculator._factor = 100
         self._coverage_ratio_calculator.calc_normalization_factors()
-        assert self._coverage_ratio_calculator._numerator_rpm_factor == (
+        assert self._coverage_ratio_calculator._numerator_cpm_factor == (
             100000.0)
-        assert self._coverage_ratio_calculator._denominator_rpm_factor == (
+        assert self._coverage_ratio_calculator._denominator_cpm_factor == (
             200000.0)
-        assert self._coverage_ratio_calculator._ratio_factor == 200.0
+        assert self._coverage_ratio_calculator._ratio_factor == 0.5
         
     def test_compare_coverages_1(self):
         assert self._coverage_ratio_calculator._compare_coverages(
