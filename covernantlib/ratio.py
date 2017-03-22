@@ -8,7 +8,7 @@ def calc_ratio(args):
     coverage_ratio_calculator.set_names()
     coverage_ratio_calculator.calc_coverages()
     coverage_ratio_calculator.print_no_aligned_reads()
-    coverage_ratio_calculator.calc_combined_factor()
+    coverage_ratio_calculator.calc_normalization_factors()
     coverage_ratio_calculator.write_numerator_and_denominator_wiggle_files()
     coverage_ratio_calculator.compare()
     coverage_ratio_calculator.write_ratio_wiggle_files()
@@ -35,43 +35,29 @@ class CoverageRatioCalculator(object):
         self._paired_end = args.paired_end
 
     def calc_coverages(self):
-        self._print_file_names()
-        (self.no_of_mapped_reads_numerator,
-        self.no_of_mapped_reads_numerator_forward,
-         self.no_of_mapped_reads_numerator_reverse
-        ) = self._count_no_of_mapped_reads(
-            self._numerator_bam_file)
-        (self.no_of_mapped_reads_denominator,
-         self.no_of_mapped_reads_denominator_forward,
-         self.no_of_mapped_reads_denominator_reverse
-        ) = self._count_no_of_mapped_reads(
-            self._denominator_bam_file)
         (self.coverage_denominator,
          self.coverage_denominator_forward,
-         self.coverage_denominator_reverse) = self._prepare_coverage(
+         self.coverage_denominator_reverse,
+         self.no_of_mapped_reads_numerator) = self._prepare_coverage(
              self._denominator_bam_file)
         (self.coverage_numerator,
          self.coverage_numerator_forward,
-         self.coverage_numerator_reverse) = self._prepare_coverage(
+         self.coverage_numerator_reverse,
+         self.no_of_mapped_reads_denominator) = self._prepare_coverage(
              self._numerator_bam_file)
 
     def print_no_aligned_reads(self):
-        print("Number of mapped reads in denominator sample - "
+        print("Number of used alignments in denominator sample - "
               "total: %s" % self.no_of_mapped_reads_denominator)
-        print("Number of mapped reads in denominator sample - "
-              "forward strand: %s" %
-              self.no_of_mapped_reads_denominator_forward)
-        print("Number of mapped reads in denominator sample - "
-              "reverse strand: %s" %
-              self.no_of_mapped_reads_denominator_reverse)
         print("Number of mapped reads in numerator sample total: %s" %
               self.no_of_mapped_reads_numerator)
-        print("Number of mapped reads in numerator sample - "
-              "forward strand: %s" % self.no_of_mapped_reads_numerator_forward)
-        print("Number of mapped reads in numerator sample - "
-              "reverse strand: %s" % self.no_of_mapped_reads_numerator_reverse)
 
-    def calc_combined_factor(self):
+    def calc_normalization_factors(self):
+        """Calculate the normalization factor based on the number of alignment
+        of the two input libraries and generate reads per million (for
+        single end) (RPM) factors / fragnmen per mission (for paired
+        end).
+        """
         self._numerator_rpm_factor = 1000000.0/float(
             self.no_of_mapped_reads_numerator)
         self._denominator_rpm_factor = 1000000.0/float(
@@ -242,36 +228,36 @@ class CoverageRatioCalculator(object):
         # Calculate the ratio of numerator data to denominator data
         coverage_ratios = [
             self._ratio(
-                float(numerator) / float(self.no_of_mapped_reads_numerator),
-                float(con) / float(self.no_of_mapped_reads_denominator))
-            for numerator, con in zip(cur_cov_numerator, cur_cov_denominator)]
+                float(numerator), float(denominator))
+            for numerator, denominator in zip(
+                    cur_cov_numerator, cur_cov_denominator)]
         return(coverage_ratios)
 
     def _prepare_coverage(self, bam_file):
+        """We generate three sets of coverages. One for the forward strand
+        only, one for the reverse strand only, and one for the sum of
+        both. The coverage returned are raw i.e. are not normalized to
+        the number of used alignment.
+        """
         ref_seq_and_coverages_sum = {}
         ref_seq_and_coverages_forward = {}
         ref_seq_and_coverages_reverse = {}
-        coverage_calculator = CoverageCalculator(
-            read_count_splitting=False, uniqueley_aligned_only=False,
-            first_base_only=False, paired_end=self._paired_end)
+        coverage_calculator = CoverageCalculator(paired_end=self._paired_end)
         for ref_seq, coverages in coverage_calculator.ref_seq_and_coverages(
                 bam_file):
             assert len(coverages["forward"]) == len(coverages["reverse"])
             # Sum up the coverage of the forward and reverse strand
             summed_coverage = [
-                abs(cov_for) + abs(cor_rev) for cov_for, cor_rev
+                cov_for + cor_rev for cov_for, cor_rev
                 in zip(coverages["forward"], coverages["reverse"])]
             ref_seq_and_coverages_sum[ref_seq] = summed_coverage
             ref_seq_and_coverages_forward[ref_seq] = [
-                abs(cor_forw) for cor_forw in coverages["forward"]]
+                cor_forw for cor_forw in coverages["forward"]]
             ref_seq_and_coverages_reverse[ref_seq] = [
-                abs(cor_rev) for cor_rev in coverages["reverse"]]
-        print("Number of used alignments: {}".format(
-            coverage_calculator.used_alignmets))
-        # print("Number of discarded alignments: {}".format(
-        #     coverage_calculator.discared_alignments))
+                cor_rev for cor_rev in coverages["reverse"]]
         return (ref_seq_and_coverages_sum, ref_seq_and_coverages_forward,
-                ref_seq_and_coverages_reverse)
+                ref_seq_and_coverages_reverse,
+                coverage_calculator.no_of_used_alignmets)
 
     def _print_file_names(self):
         print("Performing ChIP-Seq analysis")
