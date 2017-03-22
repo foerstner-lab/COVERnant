@@ -3,15 +3,10 @@ import pysam
 
 class CoverageCalculator(object):
 
-    def __init__(self, read_count_splitting=True, uniqueley_aligned_only=False,
-                 first_base_only=False, paired_end=False):
-        self._read_count_splitting = read_count_splitting
-        self._uniqueley_aligned_only = uniqueley_aligned_only
-        self._first_base_only = first_base_only
-        self._coverage_add_function = self._select_coverage_add_function()
+    def __init__(self, paired_end=False):
         self._coverages = {}
         self._paired_end = paired_end
-        self.used_alignmets = 0
+        self.no_of_used_alignmets = 0
 
     def ref_seq_and_coverages(self, bam_path):
         bam = self._open_bam_file(bam_path)
@@ -31,26 +26,31 @@ class CoverageCalculator(object):
             self._calc_coverage_paired_end(ref_seq, bam)
             
     def _calc_coverage_single_end(self, ref_seq, bam):
+        """Please be aware of the difference between 'read' and
+        'alignment'. Depending on the read mapper a single read can
+        result in multiple alignments. We are NOT correcting here but
+        simply use all alignments.
+        """
         for alignment in bam.fetch(ref_seq):
             self._add_coverage_of_single_end_reads(alignment)
             
     def _add_coverage_of_single_end_reads(self, alignment):
-        number_of_hits = self._number_of_hits(alignment)
-        if self._uniqueley_aligned_only is True and number_of_hits != 1:
-            return
         # Note: No translation from bam coordinates to python
-        # list coorindates is needed.
+        # list coordinates is needed.
         start = alignment.pos
         end = alignment.aend
-        increment = self._calc_increment_values(number_of_hits)
+        increment = 1
+        # Some mappers like bowtie2 return read alignments that do not
+        # have a start or end. Those are skipped during the coverage
+        # calculation.
         if end is None or start is None:
             return
-        self.used_alignmets += 1
-        self._coverage_add_function(alignment, increment, start, end)
+        self.no_of_used_alignmets += 1
+        self._add_whole_alignment_coverage(alignment, increment, start, end)
 
     def _calc_coverage_paired_end(self, ref_seq, bam):
         """Can handle single and paired end reads. In case of paired end
-        reads the reads are treates as one fragment."""
+        reads the reads are treated as one fragment."""
         read_pairs_by_qname = {}
         for alignment in bam.fetch(ref_seq):
             if not alignment.is_proper_pair:
@@ -73,30 +73,9 @@ class CoverageCalculator(object):
             except AttributeError:
                 continue
             end = max(read_1.pos, read_1.aend, read_2.pos, read_2.aend)
-            number_of_hits = self._number_of_hits(read_1)
-            increment = self._calc_increment_values(number_of_hits)
-            self._coverage_add_function(read_1, increment, start, end)
-            self.used_alignmets += 1
-
-    def _number_of_hits(self, alingment):
-            try:
-                return dict(alingment.tags)["NH"]
-            except KeyError:
-                return 1
-
-    def _calc_increment_values(self, number_of_hits):
-        # Normalize coverage increment by number of read alignments
-        # per read
-        if self._read_count_splitting is True:
-            return 1.0 / float(number_of_hits)
-        else:
-            return 1.0
-            
-    def _select_coverage_add_function(self):
-        if self._first_base_only is False:
-            return self._add_whole_alignment_coverage
-        else:
-            return self._add_first_base_coverage
+            increment = 1
+            self._add_whole_alignment_coverage(read_1, increment, start, end)
+            self.no_of_used_alignmets += 1
 
     def _open_bam_file(self, bam_file):
         return pysam.AlignmentFile(bam_file)
@@ -113,12 +92,3 @@ class CoverageCalculator(object):
             self._coverages["reverse"][start:end] = [
                 coverage - increment for coverage in
                 self._coverages["reverse"][start:end]]
-
-    def _add_first_base_coverage(self, alignment, increment, start, end):
-        if alignment.is_reverse is False:
-            self._coverages["forward"][start] = self._coverages[
-                "forward"][start] + increment
-        else:
-            self._coverages["reverse"][end-1] = self._coverages[
-                "reverse"][end-1] - increment
-
