@@ -1,5 +1,6 @@
 import pysam
 import sys
+import numpy as np
 from covernantlib.coveragecalculator import CoverageCalculator
 
 
@@ -134,7 +135,6 @@ class CoverageRatioCalculator(object):
 
     def _calc_averaged_coverages(self, coverages):
         averaged_coverages = {}
-        # TODO - CHECK
         if self._window_size is None:
             self._window_size = 1
         for element, element_coverages in coverages.items():
@@ -264,7 +264,7 @@ class CoverageRatioCalculator(object):
         print("- Output file prefix: %s" % self._output_prefix)
 
     def _sliding_windows_average(self, coverages):
-        averaged_coverages = [0] * len(coverages)
+        averaged_coverages = np.zeros(len(coverages))
         for pos in range(int(self._window_size/2),
                          len(coverages) - int(self._window_size/2),
                          self._step_size):
