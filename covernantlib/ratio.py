@@ -10,7 +10,7 @@ def calc_ratio(args):
     coverage_ratio_calculator.print_no_aligned_reads()
     coverage_ratio_calculator.calc_normalization_factors()
     coverage_ratio_calculator.write_numerator_and_denominator_wiggle_files()
-    coverage_ratio_calculator.compare()
+    coverage_ratio_calculator.calc_coverage_ratio()
     coverage_ratio_calculator.write_ratio_wiggle_files()
 
 
@@ -25,7 +25,6 @@ class CoverageRatioCalculator(object):
             sys.exit(2)
         self._window_size = args.window_size
         self._step_size = args.step_size
-        self._factor = args.factor
         self._factor_numerator = args.factor_numerator
         self._factor_denominator = args.factor_denominator
         self._keep_zero_coverage = args.keep_zero_coverage
@@ -54,45 +53,37 @@ class CoverageRatioCalculator(object):
 
     def calc_normalization_factors(self):
         """Calculate the normalization factor based on the number of alignment
-        of the two input libraries and generate reads per million (for
-        single end) (RPM) factors / fragnmen per mission (for paired
+        of the two input libraries and generate counts per million
+        (i.e. read counts for single end; fragment counts for paired
         end).
+
         """
-        self._numerator_rpm_factor = 1000000.0/float(
+        self._numerator_cpm_factor = 1000000.0/float(
             self.no_of_mapped_reads_numerator)
-        self._denominator_rpm_factor = 1000000.0/float(
+        self._denominator_cpm_factor = 1000000.0/float(
             self.no_of_mapped_reads_denominator)
-        self._ratio_factor = float(self.no_of_mapped_reads_numerator)/float(
-            self.no_of_mapped_reads_denominator)
-        if self._factor is not None:
-            self._ratio_factor *= self._factor
-            print("Ratio factor: %s (%s/%s * %s) " % (
-                self._ratio_factor, self.no_of_mapped_reads_numerator,
-                self.no_of_mapped_reads_denominator, self._factor))
-        elif (self._factor_numerator is not None or
-              self._factor_denominator is not None):
+        self._ratio_factor = float(self.no_of_mapped_reads_denominator)/float(
+            self.no_of_mapped_reads_numerator)
+        if (self._factor_numerator is not None or
+            self._factor_denominator is not None):
             # TODO! Improve this part
             if self._factor_numerator is None:
                 self._factor_numerator = 1.0
             if self._factor_denominator is None:
                 self._factor_denominator = 1.0
-            self._numerator_rpm_factor = self._factor_numerator
-            self._denominator_rpm_factor = self._factor_denominator
-            self._ratio_factor = float(self._factor_numerator)/float(
-                self._factor_denominator)
+            self._numerator_cpm_factor = self._factor_numerator
+            self._denominator_cpm_factor = self._factor_denominator
+            self._ratio_factor = float(self._factor_denominator)/float(
+                self._factor_numerator)
             print("Factor numerator: %s (manually set)" % (
-                self._numerator_rpm_factor))
+                self._numerator_cpm_factor))
             print("Factor denominator: %s (manually set)" % (
-                self._denominator_rpm_factor))
-        else:
-            print("Ratio factor: %s (%s/%s) " % (
-                self._ratio_factor, self.no_of_mapped_reads_numerator,
-                self.no_of_mapped_reads_denominator))
-        print("RPM factor numerator: %s (1M/%s)" % (
-            self._numerator_rpm_factor, self.no_of_mapped_reads_numerator))
-        print("RPM factor denominator: %s (1M/%s)" % (
-            self._denominator_rpm_factor, self.no_of_mapped_reads_denominator))
-
+                self._denominator_cpm_factor))
+        print("CPM factor numerator: %s (1M/%s)" % (
+            self._numerator_cpm_factor, self.no_of_mapped_reads_numerator))
+        print("CPM factor denominator: %s (1M/%s)" % (
+            self._denominator_cpm_factor, self.no_of_mapped_reads_denominator))
+        
     def set_names(self):
         if self._denominator_name is None:
             self._denominator_name = self._file_name_to_name(
@@ -111,30 +102,35 @@ class CoverageRatioCalculator(object):
         return name
 
     def write_numerator_and_denominator_wiggle_files(self):
+        """Write 6 wiggles files. 3 for denominator and for nominator - total
+        coverage, coverage forward strand and coverage reverse
+        strand. At this point the normalization by count per million
+        takes place.
+        """
         self._write_wiggle(
             self._calc_averaged_coverages(self.coverage_denominator),
             "denominator_{}".format(self._denominator_name),
-            self._denominator_rpm_factor)
+            self._denominator_cpm_factor)
         self._write_wiggle(
             self._calc_averaged_coverages(self.coverage_denominator_forward),
             "denominator_{}_forward".format(self._denominator_name),
-            self._denominator_rpm_factor)
-        self._write_wiggle(
-            self._calc_averaged_coverages(self.coverage_numerator_forward),
-            "numerator_{}_forward".format(self._numerator_name),
-            self._numerator_rpm_factor)
-        self._write_wiggle(
-            self._calc_averaged_coverages(self.coverage_numerator),
-            "numerator_{}".format(self._numerator_name),
-            self._numerator_rpm_factor)
+            self._denominator_cpm_factor)
         self._write_wiggle(
             self._calc_averaged_coverages(self.coverage_denominator_reverse),
             "denominator_{}_reverse".format(self._denominator_name),
-            self._denominator_rpm_factor)
+            self._denominator_cpm_factor)
+        self._write_wiggle(
+            self._calc_averaged_coverages(self.coverage_numerator),
+            "numerator_{}".format(self._numerator_name),
+            self._numerator_cpm_factor)
+        self._write_wiggle(
+            self._calc_averaged_coverages(self.coverage_numerator_forward),
+            "numerator_{}_forward".format(self._numerator_name),
+            self._numerator_cpm_factor)
         self._write_wiggle(
             self._calc_averaged_coverages(self.coverage_numerator_reverse),
             "numerator_reverse".format(self._numerator_name),
-            self._numerator_rpm_factor)
+            self._numerator_cpm_factor)
 
     def _calc_averaged_coverages(self, coverages):
         averaged_coverages = {}
@@ -193,7 +189,7 @@ class CoverageRatioCalculator(object):
                              self._step_size):
                 yield (pos, coverages[pos])
 
-    def compare(self):
+    def calc_coverage_ratio(self):
         self.elements_and_coverage_ratios = {}
         for element, coverages in self.coverage_denominator.items():
             self.elements_and_coverage_ratios[

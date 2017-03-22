@@ -44,9 +44,6 @@ def main():
         help="Step size for sliding window average calculation."
         " Default is 1.")
     ratio_plot_parser.add_argument(
-        "--factor", type=float, default=None,
-        help="A factor the final ratio is multiplied with.")
-    ratio_plot_parser.add_argument(
         "--factor_numerator", type=float, default=None,
         help="A factor the numerator values are are multiplied with.")
     ratio_plot_parser.add_argument(
@@ -123,15 +120,6 @@ def main():
         parser.print_help()
 
 def plot_ratios(args):
-    # This is a temporary solution and the solution should be
-    # reconsidered.
-    if args.factor is not None and (
-            args.factor_denominator is not None or
-            args.factor_numerator is not None):
-        sys.stderr.write(
-            "Error: --factor and --factor_denominator/--factor_numerator "
-            "cannot be used together!\n")
-        sys.exit()
     ratio.calc_ratio(args)
 
 def extract_coverages(args):
