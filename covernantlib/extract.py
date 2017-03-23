@@ -68,19 +68,14 @@ class CoverageExtractor(object):
 
     def extract_coverages(self):
         for coordinate in self._coordinates:
-            self._check_coordinate_validity(coordinate)
             coverages = [
                 self._replicons_and_coverages[coordinate["replicon"]].get(
                     pos, 0.0)
-                for pos in range(coordinate["start"], coordinate["end"])
-            ]
+                for pos in range(coordinate["start"], coordinate["end"])]
             if self._flip_reverse_strand and coordinate["strand"] == "-":
                 coverages = coverages[::-1]
             self._coverage_lists.append(coverages)
 
-    def _check_coordinate_validity(self, coordinate):
-        pass
-            
     def generate_coverage_matrix(self):
         max_range = max(
             [len(coverages) for coverages in self._coverage_lists])

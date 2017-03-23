@@ -1,4 +1,5 @@
 import pysam
+import numpy as np
 
 
 class CoverageCalculator(object):
@@ -6,7 +7,7 @@ class CoverageCalculator(object):
     def __init__(self, paired_end=False):
         self._coverages = {}
         self._paired_end = paired_end
-        self.no_of_used_alignmets = 0
+        self.no_of_used_bases = 0
 
     def ref_seq_and_coverages(self, bam_path):
         bam = self._open_bam_file(bam_path)
@@ -17,7 +18,7 @@ class CoverageCalculator(object):
 
     def _init_coverage_list(self, length):
         for strand in ["forward", "reverse"]:
-            self._coverages[strand] = [0.0] * length
+            self._coverages[strand] = np.zeros(length)
 
     def _calc_coverage(self, ref_seq, bam):
         if not self._paired_end:
@@ -45,7 +46,7 @@ class CoverageCalculator(object):
         # calculation.
         if end is None or start is None:
             return
-        self.no_of_used_alignmets += 1
+        self.no_of_used_bases += end - start
         self._add_whole_alignment_coverage(alignment, increment, start, end)
 
     def _calc_coverage_paired_end(self, ref_seq, bam):
@@ -75,7 +76,7 @@ class CoverageCalculator(object):
             end = max(read_1.pos, read_1.aend, read_2.pos, read_2.aend)
             increment = 1
             self._add_whole_alignment_coverage(read_1, increment, start, end)
-            self.no_of_used_alignmets += 1
+            self.no_of_used_bases += end - start
 
     def _open_bam_file(self, bam_file):
         return pysam.AlignmentFile(bam_file)
@@ -85,10 +86,6 @@ class CoverageCalculator(object):
 
     def _add_whole_alignment_coverage(self, alignment, increment, start, end):
         if alignment.is_reverse is False:
-            self._coverages["forward"][start:end] = [
-                coverage + increment for coverage in
-                self._coverages["forward"][start:end]]
+            self._coverages["forward"][start:end] += increment
         else:
-            self._coverages["reverse"][start:end] = [
-                coverage - increment for coverage in
-                self._coverages["reverse"][start:end]]
+            self._coverages["reverse"][start:end] += increment

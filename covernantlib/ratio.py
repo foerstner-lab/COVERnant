@@ -10,12 +10,54 @@ def calc_ratio(args):
     coverage_ratio_calculator.calc_coverages()
     coverage_ratio_calculator.print_no_aligned_reads()
     coverage_ratio_calculator.calc_normalization_factors()
+    coverage_ratio_calculator.normalize_coverages()
     coverage_ratio_calculator.write_numerator_and_denominator_wiggle_files()
     coverage_ratio_calculator.calc_coverage_ratio()
     coverage_ratio_calculator.write_ratio_wiggle_files()
 
 
 class CoverageRatioCalculator(object):
+    """Calculate the coverages and ratio of two input BAM files
+
+    Input: Two BAM files
+       - One later used for ratio calculation as numerator
+       - One later used for ratio calculation as denominator
+
+    Output - 9 wiggle files:
+       - Three wiggle file sets:
+         - Numerator
+           - One wiggle file forward strand (CPM)
+           - One wiggle file reverse strand (CPM)
+           - One wiggle file both strands combined (CPM)
+         - Denominator
+           - One wiggle file forward strand (CPM)
+           - One wiggle file reverse strand (CPM)
+           - One wiggle file both strands combined (CPM)
+         - Ratio:
+           - Ratio of the normalized numerator coverages and the
+             normalized denominator coverages forward strand
+           - Ratio of the normalized numerator coverages and the
+             normalized denominator coverages reverse strand
+           - Ratio of the normalized numerator coverages and the
+             normalized denominator coverages both strand combined
+
+    Normalization:
+
+       - Defaul: Count the number of valid alignments (one read can
+         lead to several alignments depending on the mapper/downstream
+         processing) and use this for the normalization. Counts per
+         million - "counts" are read for single end libraries and
+         fragments for paired end libraries. Even for the strand
+         specific coverages the total number of alignments are used.
+
+       - Alternatively the user can specificy factors that will be
+         used instead of the calculated number of alignments. This
+         might be useful e.g. if spike-ins are used.
+
+    Main parameters:
+       - Window size and step size for the calculation of the coverage
+         averages inside of a sliding window.
+    """
 
     def __init__(self, args):
         self._denominator_bam_file = args.denominator_bam_file
@@ -26,8 +68,8 @@ class CoverageRatioCalculator(object):
             sys.exit(2)
         self._window_size = args.window_size
         self._step_size = args.step_size
-        self._factor_numerator = args.factor_numerator
-        self._factor_denominator = args.factor_denominator
+        self._numerator_factor_given = args.factor_numerator
+        self._denominator_factor_given = args.factor_denominator
         self._keep_zero_coverage = args.keep_zero_coverage
         self._denominator_name = args.denominator_name
         self._numerator_name = args.numerator_name
@@ -59,32 +101,66 @@ class CoverageRatioCalculator(object):
         end).
 
         """
-        self._numerator_cpm_factor = 1000000.0/float(
-            self.no_of_mapped_reads_numerator)
-        self._denominator_cpm_factor = 1000000.0/float(
-            self.no_of_mapped_reads_denominator)
-        self._ratio_factor = float(self.no_of_mapped_reads_denominator)/float(
-            self.no_of_mapped_reads_numerator)
-        if (self._factor_numerator is not None or
-            self._factor_denominator is not None):
-            # TODO! Improve this part
-            if self._factor_numerator is None:
-                self._factor_numerator = 1.0
-            if self._factor_denominator is None:
-                self._factor_denominator = 1.0
-            self._numerator_cpm_factor = self._factor_numerator
-            self._denominator_cpm_factor = self._factor_denominator
-            self._ratio_factor = float(self._factor_denominator)/float(
-                self._factor_numerator)
+        # Default behavior if no factor is given - use the number of
+        # alignments for the normalization
+        if not (self._numerator_factor_given is not None
+                or self._denominator_factor_given is not None):
+            self._numerator_normalization_factor = 1000000.0/float(
+                self.no_of_mapped_reads_numerator)
+            self._denominator_normalization_factor = 1000000.0/float(
+                self.no_of_mapped_reads_denominator)
+            print("CPM factor numerator: %s (1M/%s)" % (
+                self._numerator_normalization_factor,
+                self.no_of_mapped_reads_numerator))
+            print("CPM factor denominator: %s (1M/%s)" % (
+                self._denominator_normalization_factor,
+                self.no_of_mapped_reads_denominator))
+        # In case one or both factors are set:
+        else:
+            if self._numerator_factor_given is None:
+                self._numerator_factor_given = 1.0
+            if self._denominator_factor_given is None:
+                self._denominator_factor_given = 1.0
+            self._numerator_normalization_factor = self._numerator_factor_given
+            self._denominator_normalization_factor = (
+                self._denominator_factor_given)
             print("Factor numerator: %s (manually set)" % (
-                self._numerator_cpm_factor))
+                self._numerator_normalization_factor))
             print("Factor denominator: %s (manually set)" % (
-                self._denominator_cpm_factor))
-        print("CPM factor numerator: %s (1M/%s)" % (
-            self._numerator_cpm_factor, self.no_of_mapped_reads_numerator))
-        print("CPM factor denominator: %s (1M/%s)" % (
-            self._denominator_cpm_factor, self.no_of_mapped_reads_denominator))
-        
+                self._denominator_normalization_factor))
+
+    def normalize_coverages(self):
+        self.coverage_denominator_normalized = (
+            self._normalize_coverages(
+                self.coverage_denominator,
+                self._denominator_normalization_factor))
+        self.coverage_denominator_forward_normalized = (
+            self._normalize_coverages(
+                self.coverage_denominator_forward,
+                self._denominator_normalization_factor))
+        self.coverage_denominator_reverse_normalized = (
+            self._normalize_coverages(
+                self.coverage_denominator_reverse,
+                self._denominator_normalization_factor))
+        self.coverage_numerator_normalized = (
+            self._normalize_coverages(
+                self.coverage_numerator,
+                self._numerator_normalization_factor))
+        self.coverage_numerator_forward_normalized = (
+            self._normalize_coverages(
+                self.coverage_numerator_forward,
+                self._numerator_normalization_factor))
+        self.coverage_numerator_reverse_normalized = (
+            self._normalize_coverages(
+                self.coverage_numerator_reverse,
+                self._numerator_normalization_factor))
+
+    def _normalize_coverages(self, coverages, factor):
+        normalized_coverages = {}
+        for element, element_coverages in coverages.items():
+            normalized_coverages[element] = element_coverages * factor
+        return normalized_coverages
+            
     def set_names(self):
         if self._denominator_name is None:
             self._denominator_name = self._file_name_to_name(
@@ -109,29 +185,28 @@ class CoverageRatioCalculator(object):
         takes place.
         """
         self._write_wiggle(
-            self._calc_averaged_coverages(self.coverage_denominator),
-            "denominator_{}".format(self._denominator_name),
-            self._denominator_cpm_factor)
+            self._calc_averaged_coverages(
+                self.coverage_denominator_normalized),
+            "denominator_{}".format(self._denominator_name))
         self._write_wiggle(
-            self._calc_averaged_coverages(self.coverage_denominator_forward),
-            "denominator_{}_forward".format(self._denominator_name),
-            self._denominator_cpm_factor)
+            self._calc_averaged_coverages(
+                self.coverage_denominator_forward_normalized),
+            "denominator_{}_forward".format(self._denominator_name))
         self._write_wiggle(
-            self._calc_averaged_coverages(self.coverage_denominator_reverse),
-            "denominator_{}_reverse".format(self._denominator_name),
-            self._denominator_cpm_factor)
+            self._calc_averaged_coverages(
+                self.coverage_denominator_reverse_normalized),
+            "denominator_{}_reverse".format(self._denominator_name))
         self._write_wiggle(
-            self._calc_averaged_coverages(self.coverage_numerator),
-            "numerator_{}".format(self._numerator_name),
-            self._numerator_cpm_factor)
+            self._calc_averaged_coverages(self.coverage_numerator_normalized),
+            "numerator_{}".format(self._numerator_name))
         self._write_wiggle(
-            self._calc_averaged_coverages(self.coverage_numerator_forward),
-            "numerator_{}_forward".format(self._numerator_name),
-            self._numerator_cpm_factor)
+            self._calc_averaged_coverages(
+                self.coverage_numerator_forward_normalized),
+            "numerator_{}_forward".format(self._numerator_name))
         self._write_wiggle(
-            self._calc_averaged_coverages(self.coverage_numerator_reverse),
-            "numerator_reverse".format(self._numerator_name),
-            self._numerator_cpm_factor)
+            self._calc_averaged_coverages(
+                self.coverage_numerator_reverse_normalized),
+            "numerator_{}_reverse".format(self._numerator_name))
 
     def _calc_averaged_coverages(self, coverages):
         averaged_coverages = {}
@@ -145,19 +220,17 @@ class CoverageRatioCalculator(object):
     def write_ratio_wiggle_files(self):
         self._write_wiggle(
             self.elements_and_coverage_ratios,
-            "ratio_{}".format(self._ratio_name), self._ratio_factor)
+            "ratio_{}".format(self._ratio_name))
         self._write_wiggle(
             self.elements_and_coverage_ratios_forward,
-            "ratio_{}_forward".format(self._ratio_name),
-            self._ratio_factor)
+            "ratio_{}_forward".format(self._ratio_name))
         self._write_wiggle(
             self.elements_and_coverage_ratios_reverse,
-            "ratio_{}_reverse".format(self._ratio_name),
-            self._ratio_factor)
+            "ratio_{}_reverse".format(self._ratio_name))
 
-    def _write_wiggle(self, elements_and_coverages, name, factor):
-        output_fh = open("%s-%s.wig" % (self._output_prefix, name), "w")
-        output_fh.write("track type=wiggle_0 name=\"%s_%s\"\n" % (
+    def _write_wiggle(self, elements_and_coverages, name):
+        output_fh = open("%s%s.wig" % (self._output_prefix, name), "w")
+        output_fh.write("track type=wiggle_0 name=\"%s%s\"\n" % (
             self._output_prefix.split("/")[-1], name))
         for element in sorted(elements_and_coverages.keys()):
             output_fh.write("variableStep chrom=%s span=1\n" % (element))
@@ -166,7 +239,7 @@ class CoverageRatioCalculator(object):
             # to a 1 based system (wiggle) takes place.
             output_fh.write(
                 "\n".join(
-                    ["%s %s" % (pos + 1, float(coverage) * factor)
+                    ["%s %s" % (pos + 1, float(coverage))
                      for pos, coverage in
                      self._pos_and_coverages(elements_and_coverages[element])])
                 + "\n")
@@ -191,23 +264,23 @@ class CoverageRatioCalculator(object):
 
     def calc_coverage_ratio(self):
         self.elements_and_coverage_ratios = {}
-        for element, coverages in self.coverage_denominator.items():
+        for element in self.coverage_denominator_normalized.keys():
             self.elements_and_coverage_ratios[
                 element] = self._compare_coverages(
-                    element, self.coverage_denominator,
-                    self.coverage_numerator)
+                    element, self.coverage_denominator_normalized,
+                    self.coverage_numerator_normalized)
         self.elements_and_coverage_ratios_forward = {}
-        for element, coverages in self.coverage_denominator_forward.items():
+        for element in self.coverage_denominator_forward_normalized.keys():
             self.elements_and_coverage_ratios_forward[
                 element] = self._compare_coverages(
-                    element, self.coverage_denominator_forward,
-                    self.coverage_numerator_forward)
+                    element, self.coverage_denominator_forward_normalized,
+                self.coverage_numerator_forward_normalized)
         self.elements_and_coverage_ratios_reverse = {}
-        for element, coverages in self.coverage_denominator_reverse.items():
+        for element in self.coverage_denominator_reverse_normalized.keys():
             self.elements_and_coverage_ratios_reverse[
                 element] = self._compare_coverages(
-                    element, self.coverage_denominator_reverse,
-                    self.coverage_numerator_reverse)
+                    element, self.coverage_denominator_reverse_normalized,
+                    self.coverage_numerator_reverse_normalized)
 
     def _compare_coverages(self, element, coverage_denominator,
                            coverage_numerator):
@@ -243,17 +316,13 @@ class CoverageRatioCalculator(object):
                 bam_file):
             assert len(coverages["forward"]) == len(coverages["reverse"])
             # Sum up the coverage of the forward and reverse strand
-            summed_coverage = [
-                cov_for + cor_rev for cov_for, cor_rev
-                in zip(coverages["forward"], coverages["reverse"])]
+            summed_coverage = coverages["forward"] + coverages["reverse"]
             ref_seq_and_coverages_sum[ref_seq] = summed_coverage
-            ref_seq_and_coverages_forward[ref_seq] = [
-                cor_forw for cor_forw in coverages["forward"]]
-            ref_seq_and_coverages_reverse[ref_seq] = [
-                cor_rev for cor_rev in coverages["reverse"]]
+            ref_seq_and_coverages_forward[ref_seq] = coverages["forward"]
+            ref_seq_and_coverages_reverse[ref_seq] = coverages["reverse"]
         return (ref_seq_and_coverages_sum, ref_seq_and_coverages_forward,
                 ref_seq_and_coverages_reverse,
-                coverage_calculator.no_of_used_alignmets)
+                coverage_calculator.no_of_used_bases)
 
     def _print_file_names(self):
         print("Performing ChIP-Seq analysis")
