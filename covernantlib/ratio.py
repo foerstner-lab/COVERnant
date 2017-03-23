@@ -342,18 +342,6 @@ class CoverageRatioCalculator(object):
                 / self._window_size)
         return(averaged_coverages)
 
-    def _count_no_of_mapped_reads(self, bam_file):
-        reads_forward = set()
-        reads_reverse = set()
-        with pysam.Samfile(bam_file, "rb") as bam_fh:
-            for read in bam_fh.fetch():
-                if read.is_reverse is False:
-                    reads_forward.add(read.qname)
-                else:
-                    reads_reverse.add(read.qname)
-        return(len(reads_forward) + len(reads_reverse), len(reads_forward),
-               len(reads_reverse))
-
     def _ratio(self, mult, div):
         try:
             return(mult/div)
