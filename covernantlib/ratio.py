@@ -26,13 +26,13 @@ class CoverageRatioCalculator(object):
     Output - 9 wiggle files:
        - Three wiggle file sets:
          - Numerator
-           - One wiggle file forward strand (CPM)
-           - One wiggle file reverse strand (CPM)
-           - One wiggle file both strands combined (CPM)
+           - One wiggle file forward strand (CPB)
+           - One wiggle file reverse strand (CPB)
+           - One wiggle file both strands combined (CPB)
          - Denominator
-           - One wiggle file forward strand (CPM)
-           - One wiggle file reverse strand (CPM)
-           - One wiggle file both strands combined (CPM)
+           - One wiggle file forward strand (CPB)
+           - One wiggle file reverse strand (CPB)
+           - One wiggle file both strands combined (CPB)
          - Ratio:
            - Ratio of the normalized numerator coverages and the
              normalized denominator coverages forward strand
@@ -46,7 +46,7 @@ class CoverageRatioCalculator(object):
        - Defaul: Count the number of valid alignments (one read can
          lead to several alignments depending on the mapper/downstream
          processing) and use this for the normalization. Counts per
-         million - "counts" are read for single end libraries and
+         billion - "counts" are read for single end libraries and
          fragments for paired end libraries. Even for the strand
          specific coverages the total number of alignments are used.
 
@@ -97,21 +97,21 @@ class CoverageRatioCalculator(object):
     def calc_normalization_factors(self):
         """Calculate the normalization factor based on the number of aligned
         nucleotides of the two input libraries and generate counts per
-        million (i.e. read counts for single end; fragment counts for
+        billion (i.e. read counts for single end; fragment counts for
         paired end).
         """
         # Default behavior if no factor is given - use the number of
         # alignments for the normalization
         if not (self._numerator_factor_given is not None
                 or self._denominator_factor_given is not None):
-            self._numerator_normalization_factor = 1000000.0/float(
+            self._numerator_normalization_factor = 1000000000.0/float(
                 self.no_of_mapped_bases_numerator)
-            self._denominator_normalization_factor = 1000000.0/float(
+            self._denominator_normalization_factor = 1000000000.0/float(
                 self.no_of_mapped_bases_denominator)
-            print("CPM factor numerator: %s (1M/%s)" % (
+            print("CPB factor numerator: %s (1B/%s)" % (
                 self._numerator_normalization_factor,
                 self.no_of_mapped_bases_numerator))
-            print("CPM factor denominator: %s (1M/%s)" % (
+            print("CPB factor denominator: %s (1B/%s)" % (
                 self._denominator_normalization_factor,
                 self.no_of_mapped_bases_denominator))
         # In case one or both factors are set:
@@ -180,7 +180,7 @@ class CoverageRatioCalculator(object):
     def write_numerator_and_denominator_wiggle_files(self):
         """Write 6 wiggles files. 3 for denominator and for nominator - total
         coverage, coverage forward strand and coverage reverse
-        strand. At this point the normalization by count per million
+        strand. At this point the normalization by count per billion
         takes place.
         """
         self._write_wiggle(

@@ -55,10 +55,10 @@ class TestCoverageRatioCalculator(unittest.TestCase):
         self._cov_ratio_calculator.no_of_mapped_bases_denominator = 5
         self._cov_ratio_calculator.calc_normalization_factors()
         assert self._cov_ratio_calculator._numerator_normalization_factor == (
-            100000.0)
+            100000000.0)
         assert (
             self._cov_ratio_calculator._denominator_normalization_factor == (
-                200000.0))
+                200000000.0))
         
     def test_calc_normalization_factors_2(self):
         """In case numerator and denominator factors are given the two number
