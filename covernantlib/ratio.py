@@ -8,7 +8,7 @@ def calc_ratio(args):
     coverage_ratio_calculator = CoverageRatioCalculator(args)
     coverage_ratio_calculator.set_names()
     coverage_ratio_calculator.calc_coverages()
-    coverage_ratio_calculator.print_no_aligned_reads()
+    coverage_ratio_calculator.print_no_aligned_bases()
     coverage_ratio_calculator.calc_normalization_factors()
     coverage_ratio_calculator.normalize_coverages()
     coverage_ratio_calculator.write_numerator_and_denominator_wiggle_files()
@@ -80,41 +80,40 @@ class CoverageRatioCalculator(object):
         (self.coverage_denominator,
          self.coverage_denominator_forward,
          self.coverage_denominator_reverse,
-         self.no_of_mapped_reads_numerator) = self._prepare_coverage(
+         self.no_of_mapped_bases_denominator) = self._prepare_coverage(
              self._denominator_bam_file)
         (self.coverage_numerator,
          self.coverage_numerator_forward,
          self.coverage_numerator_reverse,
-         self.no_of_mapped_reads_denominator) = self._prepare_coverage(
+         self.no_of_mapped_bases_numerator) = self._prepare_coverage(
              self._numerator_bam_file)
 
-    def print_no_aligned_reads(self):
-        print("Number of used alignments in denominator sample - "
-              "total: %s" % self.no_of_mapped_reads_denominator)
-        print("Number of mapped reads in numerator sample total: %s" %
-              self.no_of_mapped_reads_numerator)
+    def print_no_aligned_bases(self):
+        print("Number of used bases in denominator sample - "
+              "total: %s" % self.no_of_mapped_bases_denominator)
+        print("Number of mapped bases in numerator sample total: %s" %
+              self.no_of_mapped_bases_numerator)
 
     def calc_normalization_factors(self):
-        """Calculate the normalization factor based on the number of alignment
-        of the two input libraries and generate counts per million
-        (i.e. read counts for single end; fragment counts for paired
-        end).
-
+        """Calculate the normalization factor based on the number of aligned
+        nucleotides of the two input libraries and generate counts per
+        million (i.e. read counts for single end; fragment counts for
+        paired end).
         """
         # Default behavior if no factor is given - use the number of
         # alignments for the normalization
         if not (self._numerator_factor_given is not None
                 or self._denominator_factor_given is not None):
             self._numerator_normalization_factor = 1000000.0/float(
-                self.no_of_mapped_reads_numerator)
+                self.no_of_mapped_bases_numerator)
             self._denominator_normalization_factor = 1000000.0/float(
-                self.no_of_mapped_reads_denominator)
+                self.no_of_mapped_bases_denominator)
             print("CPM factor numerator: %s (1M/%s)" % (
                 self._numerator_normalization_factor,
-                self.no_of_mapped_reads_numerator))
+                self.no_of_mapped_bases_numerator))
             print("CPM factor denominator: %s (1M/%s)" % (
                 self._denominator_normalization_factor,
-                self.no_of_mapped_reads_denominator))
+                self.no_of_mapped_bases_denominator))
         # In case one or both factors are set:
         else:
             if self._numerator_factor_given is None:
