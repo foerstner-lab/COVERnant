@@ -51,8 +51,8 @@ class TestCoverageRatioCalculator(unittest.TestCase):
         assert self._cov_ratio_calculator._ratio(10.0, 0.0) == 0
         
     def test_calc_normalization_factors_1(self):
-        self._cov_ratio_calculator.no_of_mapped_reads_numerator = 10
-        self._cov_ratio_calculator.no_of_mapped_reads_denominator = 5
+        self._cov_ratio_calculator.no_of_mapped_bases_numerator = 10
+        self._cov_ratio_calculator.no_of_mapped_bases_denominator = 5
         self._cov_ratio_calculator.calc_normalization_factors()
         assert self._cov_ratio_calculator._numerator_normalization_factor == (
             100000.0)
@@ -85,4 +85,38 @@ class TestCoverageRatioCalculator(unittest.TestCase):
             "chrom1", {"chrom1": [2, 4, 8]}, {"chrom1": [4, 8, 48]}) == [
                 2, 2, 6]
 
-        
+    def test_normalize_coverages_1(self):
+        # Denominator
+        self._cov_ratio_calculator._denominator_normalization_factor = 5
+        self._cov_ratio_calculator.coverage_denominator = {
+            "chrom": np.array([1.0, 1.0, 1.0, 1.0, 1.0])}
+        self._cov_ratio_calculator.coverage_denominator_forward = {
+            "chrom": np.array([1.0, 1.0, 1.0, 1.0, 1.0])}
+        self._cov_ratio_calculator.coverage_denominator_reverse = {
+            "chrom": np.array([1.0, 1.0, 1.0, 1.0, 1.0])}
+        # Numerator
+        self._cov_ratio_calculator._numerator_normalization_factor = 10
+        self._cov_ratio_calculator.coverage_numerator = {
+            "chrom": np.array([1.0, 1.0, 1.0, 1.0, 1.0])}
+        self._cov_ratio_calculator.coverage_numerator_forward = {
+            "chrom": np.array([1.0, 1.0, 1.0, 1.0, 1.0])}
+        self._cov_ratio_calculator.coverage_numerator_reverse = {
+            "chrom": np.array([1.0, 1.0, 1.0, 1.0, 1.0])}
+        self._cov_ratio_calculator.normalize_coverages()
+        assert list(
+            self._cov_ratio_calculator.coverage_denominator_normalized[
+                "chrom"]) == [5.0, 5.0, 5.0, 5.0, 5.0]
+        assert list(
+            self._cov_ratio_calculator.coverage_denominator_reverse_normalized[
+                "chrom"]) == [5.0, 5.0, 5.0, 5.0, 5.0]
+        assert list(
+            self._cov_ratio_calculator.coverage_denominator_forward_normalized[
+                "chrom"]) == [5.0, 5.0, 5.0, 5.0, 5.0]
+        assert list(self._cov_ratio_calculator.coverage_numerator_normalized[
+            "chrom"]) == [10.0, 10.0, 10.0, 10.0, 10.0]
+        assert list(
+            self._cov_ratio_calculator.coverage_numerator_reverse_normalized[
+                "chrom"]) == [10.0, 10.0, 10.0, 10.0, 10.0]
+        assert list(
+            self._cov_ratio_calculator.coverage_numerator_forward_normalized[
+                "chrom"]) == [10.0, 10.0, 10.0, 10.0, 10.0]
