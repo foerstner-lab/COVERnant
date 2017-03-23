@@ -29,8 +29,7 @@ def main():
     ratio_plot_parser.add_argument("denominator_bam_file")
     ratio_plot_parser.add_argument("numerator_bam_file")
     ratio_plot_parser.add_argument(
-        "--output", "-o", dest="output_prefix",
-        default="numerator_seq", required=False)
+        "--output_prefix", "-o", default="", required=False)
     ratio_plot_parser.add_argument(
         "--paired_end", default=False, action="store_true",
         help="Paired reads are treated as one fragment an the start and "
@@ -58,7 +57,8 @@ def main():
     ratio_plot_parser.add_argument("--ratio_name", default=None)
 
     extract_parser = subparsers.add_parser(
-        "extract", help="Extract coverage values from wiggle file.")
+        "extract", help="Extract coverage values from a wiggle file based "
+        "on coordinates in a bed file and generate a matrix.")
     extract_parser.set_defaults(func=extract_coverages)
     extract_parser.add_argument("coverage_file")
     extract_parser.add_argument("coordinate_file")
