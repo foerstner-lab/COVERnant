@@ -1,6 +1,6 @@
 import unittest
-import pandas as pd
-from pandas.util.testing import assert_frame_equal
+import numpy.testing as npt
+import numpy as np
 from covernantlib.extract import CoverageExtractor
 
 
@@ -40,20 +40,23 @@ class TestCoverageExtractor(unittest.TestCase):
     def test_align_coverages_1(self):
         """Alignment left"""
         self.coverage_extractor._matrix_alignment = "left"
-        self.assertEqual(
+        npt.assert_array_equal(
             self.coverage_extractor._align_coverages([1.0, 2.0, 3.0], 10),
-            [1.0, 2.0, 3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+            [1.0, 2.0, 3.0, np.nan, np.nan, np.nan, np.nan, np.nan,
+             np.nan, np.nan])
             
     def test_align_coverages_2(self):
         """Alignment center"""
         self.coverage_extractor._matrix_alignment = "center"
-        self.assertEqual(
+        npt.assert_array_equal(
             self.coverage_extractor._align_coverages([1.0, 2.0, 3.0], 10),
-            [0.0, 0.0, 0.0, 0.0, 1.0, 2.0, 3.0, 0.0, 0.0, 0.0])
+            [np.nan, np.nan, np.nan, np.nan, 1.0, 2.0, 3.0, np.nan,
+             np.nan, np.nan])
 
     def test_align_coverages_3(self):
         """Alignment right"""
         self.coverage_extractor._matrix_alignment = "right"
-        self.assertEqual(
-            self.coverage_extractor._align_coverages([1.0, 2.0, 3.0], 10),
-            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 2.0, 3.0])
+        npt.assert_array_equal(self.coverage_extractor._align_coverages(
+            [1.0, 2.0, 3.0], 10), [
+                np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan,
+                1.0, 2.0, 3.0])
