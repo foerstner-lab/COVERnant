@@ -2,6 +2,7 @@ import unittest
 from covernantlib.ratio import CoverageRatioCalculator
 from argparse import Namespace
 import numpy as np
+import numpy.testing as npt
 
 
 class TestCoverageRatioCalculator(unittest.TestCase):
@@ -23,20 +24,26 @@ class TestCoverageRatioCalculator(unittest.TestCase):
     def test_sliding_windows_average_1(self):
         self._cov_ratio_calculator._window_size = 1
         self._cov_ratio_calculator.step_size = 1
-        assert list(self._cov_ratio_calculator._sliding_windows_average(
-            [1.0, 1.0, 1.0, 2.0, 2.0])) == [1.0, 1.0, 1.0, 2.0, 2.0]
+        npt.assert_array_equal(
+            self._cov_ratio_calculator._sliding_windows_average(
+                [1.0, 1.0, 1.0, 2.0, 2.0]),
+            np.array([1.0, 1.0, 1.0, 2.0, 2.0]))
 
     def test_sliding_windows_average_2(self):
         self._cov_ratio_calculator._window_size = 3
         self._cov_ratio_calculator.step_size = 1
-        assert list(self._cov_ratio_calculator._sliding_windows_average(
-            [1.0, 1.0, 1.0, 4.0, 1.0])) == [0.0, 1.0, 2.0, 2.0, 0.0]
+        npt.assert_array_equal(
+            self._cov_ratio_calculator._sliding_windows_average(
+                [1.0, 1.0, 1.0, 4.0, 1.0]),
+            np.array([0.0, 1.0, 2.0, 2.0, 0.0]))
         
     def test_sliding_windows_average_3(self):
         self._cov_ratio_calculator._window_size = 1
         self._cov_ratio_calculator._step_size = 2
-        assert list(self._cov_ratio_calculator._sliding_windows_average(
-            [1.0, 1.0, 1.0, 4.0, 1.0])) == [1.0, 0, 1.0, 0.0, 1.0]
+        npt.assert_array_equal(
+            self._cov_ratio_calculator._sliding_windows_average(
+                [1.0, 1.0, 1.0, 4.0, 1.0]),
+            np.array([1.0, 0, 1.0, 0.0, 1.0]))
         
     def test_ratio_1(self):
         assert self._cov_ratio_calculator._ratio(10.0, 5.0) == 2
@@ -103,20 +110,21 @@ class TestCoverageRatioCalculator(unittest.TestCase):
         self._cov_ratio_calculator.coverage_numerator_reverse = {
             "chrom": np.array([1.0, 1.0, 1.0, 1.0, 1.0])}
         self._cov_ratio_calculator.normalize_coverages()
-        assert list(
+        npt.assert_array_equal(
             self._cov_ratio_calculator.coverage_denominator_normalized[
-                "chrom"]) == [5.0, 5.0, 5.0, 5.0, 5.0]
-        assert list(
+                "chrom"], np.array([5.0, 5.0, 5.0, 5.0, 5.0]))
+        npt.assert_array_equal(
             self._cov_ratio_calculator.coverage_denominator_reverse_normalized[
-                "chrom"]) == [5.0, 5.0, 5.0, 5.0, 5.0]
-        assert list(
+                "chrom"], np.array([5.0, 5.0, 5.0, 5.0, 5.0]))
+        npt.assert_array_equal(
             self._cov_ratio_calculator.coverage_denominator_forward_normalized[
-                "chrom"]) == [5.0, 5.0, 5.0, 5.0, 5.0]
-        assert list(self._cov_ratio_calculator.coverage_numerator_normalized[
-            "chrom"]) == [10.0, 10.0, 10.0, 10.0, 10.0]
-        assert list(
+                "chrom"], np.array([5.0, 5.0, 5.0, 5.0, 5.0]))
+        npt.assert_array_equal(
+            self._cov_ratio_calculator.coverage_numerator_normalized[
+            "chrom"], np.array([10.0, 10.0, 10.0, 10.0, 10.0]))
+        npt.assert_array_equal(
             self._cov_ratio_calculator.coverage_numerator_reverse_normalized[
-                "chrom"]) == [10.0, 10.0, 10.0, 10.0, 10.0]
-        assert list(
+                "chrom"], np.array([10.0, 10.0, 10.0, 10.0, 10.0]))
+        npt.assert_array_equal(
             self._cov_ratio_calculator.coverage_numerator_forward_normalized[
-                "chrom"]) == [10.0, 10.0, 10.0, 10.0, 10.0]
+                "chrom"], np.array([10.0, 10.0, 10.0, 10.0, 10.0]))
