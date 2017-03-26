@@ -19,8 +19,9 @@ pylint:
 	pylint bin/bin covernantlib/* tests/*
 
 pypi_submission:
-	python3 setup.py bdist upload
+	twine upload dist/*
 	@echo "Go to https://pypi.python.org/pypi/COVERnant/"
+
 
 new_release:
 	@echo "* Create/checkout a release branch"
@@ -32,7 +33,7 @@ new_release:
 	@echo "* Test package creation"
 	@echo "  $$ make package"
 	@echo "* Submit package"
-	@echo "  $$ make package_to_pypi"
+	@echo "  $$ make pypi_submission"
 	@echo "* Add and commit changes"
 	@echo "  $$ git add CHANGELOG.txt bin/covernant setup.py"
 	@echo "  $$ git commit -m \"Set version to 0.X.0\""

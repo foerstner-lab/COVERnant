@@ -1,4 +1,12 @@
-v0.1 (2016-11-11)
+v0.3.0 (2017-03-26)
+- Change of ratio's CLI interface (using of keyword parameters for BAM files)
+- The subcommand ratio now normalizes to the number of aligned bases not reads
+- Extend use of numpy
+- Remove single factor setting in subcommand ratio
+- Switch to pytest
+- Switch to twine for package submission to PyPI
+
+v0.2 (2016-11-11)
 - Add wiggle rescaling
 
 v0.1 (2016-07-11)
