@@ -89,10 +89,10 @@ class CoverageRatioCalculator(object):
              self._numerator_bam_file)
 
     def print_no_aligned_bases(self):
-        print("Number of used bases in denominator sample - "
-              "total: %s" % self.no_of_mapped_bases_denominator)
         print("Number of mapped bases in numerator sample total: %s" %
               self.no_of_mapped_bases_numerator)
+        print("Number of used bases in denominator sample - "
+              "total: %s" % self.no_of_mapped_bases_denominator)        
 
     def calc_normalization_factors(self):
         """Calculate the normalization factor based on the number of aligned
