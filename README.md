@@ -12,16 +12,21 @@ The tool is currently in an **early development stage**.
 COVERnant has several subcommands as its command line help shows:
 
 ```
-$ covernant
-usage: covernant [-h] [--version] {ratio,extract,plot_matrix,bed_to_wig} ...
+$ covernant -h
+usage: covernant [-h] [--version]
+                 {ratio,extract,plot_matrix,bed_to_wig,rescale_wig} ...
 
 positional arguments:
-  {ratio,extract,plot_matrix,bed_to_wig}
+  {ratio,extract,plot_matrix,bed_to_wig,rescale_wig}
                         commands
-    ratio               Generate ratio plots of two alignment files.
-    extract             Extract coverage values from wiggle file.
+    ratio               Generate ratio plots of two alignment files in Bam
+                        formar.
+    extract             Extract coverage values from a wiggle file based on
+                        coordinates in a bed file and generate a matrix.
     plot_matrix         Plot the content of the extracted coverage matrix.
-    bed_to_wig          Converts Bed file to coverage in wiggle formats
+    bed_to_wig          Converts Bed files to coverage files in wiggle formats
+    rescale_wig         Multiplies each value of a wiggle file with a given
+                        factor.
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -31,22 +36,22 @@ optional arguments:
 ## Subcommand `ratio`
 
 ```
-$ covernant ratio -h
-usage: covernant ratio [-h] [--output OUTPUT_PREFIX] [--paired_end]
+usage: covernant ratio [-h] [--denominator DENOMINATOR_BAM_FILE]
+                       [--numerator NUMERATOR_BAM_FILE]
+                       [--output_prefix OUTPUT_PREFIX] [--paired_end]
                        [--window_size WINDOW_SIZE] [--step_size STEP_SIZE]
-                       [--factor FACTOR] [--keep_zero_coverage]
+                       [--factor_numerator FACTOR_NUMERATOR]
+                       [--factor_denominator FACTOR_DENOMINATOR]
+                       [--keep_zero_coverage]
                        [--denominator_name DENOMINATOR_NAME]
                        [--numerator_name NUMERATOR_NAME]
                        [--ratio_name RATIO_NAME]
-                       denominator_bam_file numerator_bam_file
-
-positional arguments:
-  denominator_bam_file
-  numerator_bam_file
 
 optional arguments:
   -h, --help            show this help message and exit
-  --output OUTPUT_PREFIX, -o OUTPUT_PREFIX
+  --denominator DENOMINATOR_BAM_FILE
+  --numerator NUMERATOR_BAM_FILE
+  --output_prefix OUTPUT_PREFIX, -o OUTPUT_PREFIX
   --paired_end          Paired reads are treated as one fragment an the start
                         and end positions are used accordingly
   --window_size WINDOW_SIZE
@@ -55,7 +60,11 @@ optional arguments:
   --step_size STEP_SIZE
                         Step size for sliding window average calculation.
                         Default is 1.
-  --factor FACTOR       A factor the final ratio is multiplied with.
+  --factor_numerator FACTOR_NUMERATOR
+                        A factor the numerator values are are multiplied with.
+  --factor_denominator FACTOR_DENOMINATOR
+                        A factor the denominator values are are multiplied
+                        with.
   --keep_zero_coverage  Also write coordinates that have a coverage of 0.
                         Default is to discard those.
   --denominator_name DENOMINATOR_NAME
