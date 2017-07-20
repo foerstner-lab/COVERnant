@@ -46,10 +46,10 @@ def main():
         " Default is 1.")
     ratio_plot_parser.add_argument(
         "--factor_numerator", type=float, default=None,
-        help="A factor the numerator values are are multiplied with.")
+        help="A factor the numerator values are multiplied with.")
     ratio_plot_parser.add_argument(
         "--factor_denominator", type=float, default=None,
-        help="A factor the denominator values are are multiplied with.")
+        help="A factor the denominator values are multiplied with.")
     ratio_plot_parser.add_argument(
         "--keep_zero_coverage", default=False, action="store_true",
         help="Also write coordinates that have a coverage of 0. "
