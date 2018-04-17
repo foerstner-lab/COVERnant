@@ -57,10 +57,15 @@ class CoverageCalculator(object):
             if not alignment.is_proper_pair:
                 self._add_coverage_of_single_end_reads(alignment)
             else:
+                # some paired-end mapping have a third supplementary
+                # read that should be discarded
+                if alignment.is_supplementary:
+                    continue
                 # Collect all read pairs - this might be memory intensive!
                 index = 0
                 if alignment.is_read2:
                     index = 1
+
                 read_pairs_by_qname.setdefault(
                     alignment.qname, [None, None])
                 read_pairs_by_qname[alignment.qname][index] = alignment
