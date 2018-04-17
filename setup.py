@@ -7,7 +7,7 @@ except ImportError:
 
 setup(
     name='COVERnant',
-    version='0.3.1',
+    version='0.3.2',
     packages=['covernantlib'],
     author='Konrad U. Förstner',
     author_email='konrad@foerstner.org',
@@ -15,11 +15,11 @@ setup(
     'high-throughput sequencing data.',
     url='https://github.com/konrad/COVERnant',
     install_requires=[
-        "pybedtools >= 0.7.7",
-        "matplotlib >= 1.5.1",
-        "pandas >= 0.18.1",
-        "pysam >= 0.9.1.3",
-        "numpy >= 1.11.1"
+        "pybedtools >= 0.7.10",
+        "matplotlib >= 2.2.2",
+        "pandas >= 0.22.0",
+        "pysam >=  0.14.1",
+        "numpy >= 1.14.2"
     ],
     scripts=['bin/covernant'],
     license='ISC License (ISCL)',

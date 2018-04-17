@@ -1,3 +1,7 @@
+v0.3.2 (2018-04-17)
+- Update dependencies
+- Fix packaging
+
 v0.3.1 (2018-04-17)
 - Remove íssue with supplementary read in paired-end mappings
 
