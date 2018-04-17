@@ -2,7 +2,7 @@ test:
 	python -m pytest
 
 package:
-	python3 setup.py bdist
+	python3 setup.py sdist
 
 readme_rst:
 	grep -v "^\[!" README.md | sed -e "1d" > README.md.tmp
